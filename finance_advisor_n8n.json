@@ -23,7 +23,7 @@
     },
     {
       "parameters": {
-        "sessionIdType": "custom",
+        "sessionIdType": "customKey",
         "sessionKey": "={{ $('Webhook Trigger').first().json.body.session_id || 'default' }}"
       },
       "type": "@n8n/n8n-nodes-langchain.memoryBufferWindow",
