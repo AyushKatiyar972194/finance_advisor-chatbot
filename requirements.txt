@@ -1,11 +1,11 @@
-google-generativeai
 langchain
-langchain-google-genai
 langchain-community
-langchain-openai
 crewai
 crewai-tools
-openai
 ollama
 streamlit
 python-dotenv
+fastapi
+uvicorn
+pydantic-settings
+pydantic

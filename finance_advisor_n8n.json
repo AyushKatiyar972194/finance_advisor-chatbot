@@ -1,0 +1,482 @@
+{
+  "name": "Personal Finance Advisor Standalone Workflow",
+  "nodes": [
+    {
+      "parameters": {
+        "model": "llama3.2:3b",
+        "options": {}
+      },
+      "credentials": {
+        "ollamaApi": {
+          "id": "q7TjuZ4SY4TN4wHF",
+          "name": "Ollama account"
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOllama",
+      "typeVersion": 1,
+      "position": [
+        800,
+        500
+      ],
+      "id": "ollama-model",
+      "name": "Ollama LLM"
+    },
+    {
+      "parameters": {
+        "sessionIdType": "custom",
+        "sessionKey": "={{ $('Webhook Trigger').first().json.body.session_id || 'default' }}"
+      },
+      "type": "@n8n/n8n-nodes-langchain.memoryBufferWindow",
+      "typeVersion": 1.2,
+      "position": [
+        400,
+        500
+      ],
+      "id": "buffer-memory",
+      "name": "Window Buffer Memory"
+    },
+    {
+      "parameters": {
+        "name": "Budget Calculator",
+        "description": "Custom JS implementation of Budget Calculator.",
+        "jsCode": "try {\n  const text = query || '';\n  const parseNum = (matchResult) => {\n    if (!matchResult) return null;\n    let val = parseFloat(matchResult[1]);\n    const unit = (matchResult[2] || '').toLowerCase();\n    if (unit.startsWith('k')) val *= 1000;\n    else if (unit.startsWith('l')) val *= 100000;\n    else if (unit.startsWith('m')) val *= 1000000;\n    return val;\n  };\n  \n  let income = parseNum(text.match(/(?:income|earn|salary|inflow)\\D*(\\d+(?:\\.\\d+)?)\\s*(k|lakh|l|m)?/i));\n  let expenses = parseNum(text.match(/(?:expense|spend|outgo|cost|bill)\\D*(\\d+(?:\\.\\d+)?)\\s*(k|lakh|l|m)?/i));\n  \n  if (income === null || expenses === null) {\n    const numbers = [];\n    const numRegex = /(\\d+(?:\\.\\d+)?)\\s*(k|lakh|l|m)?/gi;\n    let m;\n    while ((m = numRegex.exec(text)) !== null) {\n      let val = parseFloat(m[1]);\n      const unit = (m[2] || '').toLowerCase();\n      if (unit.startsWith('k')) val *= 1000;\n      else if (unit.startsWith('l')) val *= 100000;\n      else if (unit.startsWith('m')) val *= 1000000;\n      numbers.push(val);\n    }\n    if (numbers.length >= 2) {\n      if (income === null && expenses === null) {\n        income = Math.max(numbers[0], numbers[1]);\n        expenses = Math.min(numbers[0], numbers[1]);\n      } else if (income === null) {\n        income = numbers.find(n => n !== expenses) || expenses * 1.5;\n      } else if (expenses === null) {\n        expenses = numbers.find(n => n !== income) || income * 0.6;\n      }\n    }\n  }\n  \n  if (income === null || expenses === null) {\n    const missing = [];\n    if (income === null) missing.push('monthly_income');\n    if (expenses === null) missing.push('monthly_expenses');\n    return `Error: Missing required inputs for Budget calculation. Required: ${missing.join(', ')}.`;\n  }\n  \n  if (income <= 0) return 'Error: Income must be greater than zero.';\n  \n  const surplus = income - expenses;\n  const savings_rate = (surplus / income) * 100;\n  const needs_50 = income * 0.50;\n  const wants_30 = income * 0.30;\n  const savings_20 = income * 0.20;\n  const emergency_fund = expenses * 6;\n  \n  const fmt = (num) => num.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });\n  \n  return `Monthly Income: INR ${fmt(income)}\nMonthly Expenses: INR ${fmt(expenses)}\nMonthly Surplus: INR ${fmt(surplus)}\nSavings Rate: ${savings_rate.toFixed(2)}%\n50-30-20 Allocation Plan:\n- Needs (50%): INR ${fmt(needs_50)}\n- Wants (30%): INR ${fmt(wants_30)}\n- Savings (20%): INR ${fmt(savings_20)}\n6-Month Emergency Fund Target: INR ${fmt(emergency_fund)}`;\n} catch (e) {\n  return 'Error: ' + e.message;\n}"
+      },
+      "type": "@n8n/n8n-nodes-langchain.toolCode",
+      "typeVersion": 1,
+      "position": [
+        500,
+        650
+      ],
+      "id": "node-Budget Calculator",
+      "name": "Budget Calculator"
+    },
+    {
+      "parameters": {
+        "name": "SIP Calculator",
+        "description": "Custom JS implementation of SIP Calculator.",
+        "jsCode": "try {\n  const text = query || '';\n  const parseNum = (matchResult) => {\n    if (!matchResult) return null;\n    let val = parseFloat(matchResult[1]);\n    const unit = (matchResult[2] || '').toLowerCase();\n    if (unit.startsWith('k')) val *= 1000;\n    else if (unit.startsWith('l')) val *= 100000;\n    else if (unit.startsWith('m')) val *= 1000000;\n    return val;\n  };\n  \n  let sip = parseNum(text.match(/(?:sip|monthly|invest|saving)\\D*(\\d+(?:\\.\\d+)?)\\s*(k|lakh|l|m)?/i));\n  let rate_annual = null;\n  const pctMatch = text.match(/(\\d+(?:\\.\\d+)?)\\s*%/);\n  if (pctMatch) {\n    rate_annual = parseFloat(pctMatch[1]);\n  } else {\n    const rateMatch = text.match(/(?:rate|return|interest|yield)\\D*(\\d+(?:\\.\\d+)?)/i);\n    if (rateMatch) rate_annual = parseFloat(rateMatch[1]);\n  }\n  \n  let years = null;\n  const yrMatch = text.match(/(\\d+)\\s*(?:year|yr|y)/i);\n  if (yrMatch) {\n    years = parseInt(yrMatch[1]);\n  } else {\n    const yearsMatch = text.match(/(?:year|duration|time|period)\\D*(\\d+)/i);\n    if (yearsMatch) years = parseInt(yearsMatch[1]);\n  }\n  \n  if (sip === null || rate_annual === null || years === null) {\n    const missing = [];\n    if (sip === null) missing.push('monthly_investment');\n    if (rate_annual === null) missing.push('expected_return_rate');\n    if (years === null) missing.push('years');\n    return `Error: Missing required inputs for SIP calculation. Required: ${missing.join(', ')}.`;\n  }\n  \n  const rate_monthly = rate_annual / 12 / 100;\n  const months = years * 12;\n  const total_invested = sip * months;\n  const maturity_value = sip * ((Math.pow(1 + rate_monthly, months) - 1) / rate_monthly) * (1 + rate_monthly);\n  const estimated_returns = maturity_value - total_invested;\n  \n  const fmt = (num) => num.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });\n  \n  return `Monthly SIP: INR ${fmt(sip)}\nTenure: ${years} years (${months} months)\nExpected Return Rate: ${rate_annual.toFixed(2)}%\nTotal Invested: INR ${fmt(total_invested)}\nMaturity Value: INR ${fmt(maturity_value)}\nWealth Gained: INR ${fmt(estimated_returns)}`;\n} catch (e) {\n  return 'Error: ' + e.message;\n}"
+      },
+      "type": "@n8n/n8n-nodes-langchain.toolCode",
+      "typeVersion": 1,
+      "position": [
+        700,
+        650
+      ],
+      "id": "node-SIP Calculator",
+      "name": "SIP Calculator"
+    },
+    {
+      "parameters": {
+        "name": "EMI Calculator",
+        "description": "Custom JS implementation of EMI Calculator.",
+        "jsCode": "try {\n  const text = query || '';\n  const parseNum = (matchResult) => {\n    if (!matchResult) return null;\n    let val = parseFloat(matchResult[1]);\n    const unit = (matchResult[2] || '').toLowerCase();\n    if (unit.startsWith('k')) val *= 1000;\n    else if (unit.startsWith('l')) val *= 100000;\n    else if (unit.startsWith('m')) val *= 1000000;\n    return val;\n  };\n  \n  let principal = parseNum(text.match(/(?:principal|loan|debt|amount)\\D*(\\d+(?:\\.\\d+)?)\\s*(k|lakh|l|m)?/i));\n  let rate_annual = null;\n  const pctMatch = text.match(/(\\d+(?:\\.\\d+)?)\\s*%/);\n  if (pctMatch) {\n    rate_annual = parseFloat(pctMatch[1]);\n  } else {\n    const rateMatch = text.match(/(?:rate|interest)\\D*(\\d+(?:\\.\\d+)?)/i);\n    if (rateMatch) rate_annual = parseFloat(rateMatch[1]);\n  }\n  \n  let years = null;\n  const yrMatch = text.match(/(\\d+)\\s*(?:year|yr|y)/i);\n  if (yrMatch) {\n    years = parseInt(yrMatch[1]);\n  } else {\n    const yearsMatch = text.match(/(?:year|duration|time|period|tenure)\\D*(\\d+)/i);\n    if (yearsMatch) years = parseInt(yearsMatch[1]);\n  }\n  \n  if (principal === null || rate_annual === null || years === null) {\n    const missing = [];\n    if (principal === null) missing.push('principal');\n    if (rate_annual === null) missing.push('annual_interest_rate');\n    if (years === null) missing.push('years');\n    return `Error: Missing required inputs for EMI calculation. Required: ${missing.join(', ')}.`;\n  }\n  \n  const rate_monthly = rate_annual / 12 / 100;\n  const months = years * 12;\n  const emi = principal * rate_monthly * Math.pow(1 + rate_monthly, months) / (Math.pow(1 + rate_monthly, months) - 1);\n  const total_payment = emi * months;\n  const total_interest = total_payment - principal;\n  \n  const fmt = (num) => num.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });\n  \n  return `Loan Principal: INR ${fmt(principal)}\nTenure: ${years} years (${months} months)\nAnnual Interest Rate: ${rate_annual.toFixed(2)}%\nMonthly EMI: INR ${fmt(emi)}\nTotal Payment: INR ${fmt(total_payment)}\nTotal Interest Payable: INR ${fmt(total_interest)}`;\n} catch (e) {\n  return 'Error: ' + e.message;\n}"
+      },
+      "type": "@n8n/n8n-nodes-langchain.toolCode",
+      "typeVersion": 1,
+      "position": [
+        900,
+        650
+      ],
+      "id": "node-EMI Calculator",
+      "name": "EMI Calculator"
+    },
+    {
+      "parameters": {
+        "name": "Tax Calculator",
+        "description": "Custom JS implementation of Tax Calculator.",
+        "jsCode": "try {\n  const text = query || '';\n  const parseNum = (matchResult) => {\n    if (!matchResult) return null;\n    let val = parseFloat(matchResult[1]);\n    const unit = (matchResult[2] || '').toLowerCase();\n    if (unit.startsWith('k')) val *= 1000;\n    else if (unit.startsWith('l')) val *= 100000;\n    else if (unit.startsWith('m')) val *= 1000000;\n    return val;\n  };\n  \n  let income = parseNum(text.match(/(?:income|earn|salary|annual|taxable)\\D*(\\d+(?:\\.\\d+)?)\\s*(k|lakh|l|m)?/i));\n  if (income === null) {\n    const numbers = [];\n    const numRegex = /(\\d+(?:\\.\\d+)?)\\s*(k|lakh|l|m)?/gi;\n    let m;\n    while ((m = numRegex.exec(text)) !== null) {\n      let val = parseFloat(m[1]);\n      const unit = (m[2] || '').toLowerCase();\n      if (unit.startsWith('k')) val *= 1000;\n      else if (unit.startsWith('l')) val *= 100000;\n      else if (unit.startsWith('m')) val *= 1000000;\n      numbers.push(val);\n    }\n    income = numbers.find(n => n > 1000) || null;\n  }\n  \n  if (income === null) {\n    return 'Error: Missing required inputs for Tax calculation. Required: annual_income.';\n  }\n  \n  if (income > 0 && income < 100000) {\n    income = income * 12;\n  }\n  \n  const net_new = Math.max(0, income - 75000);\n  let tax_new = 0;\n  if (net_new > 700000) {\n    let temp = net_new;\n    if (temp > 1500000) { tax_new += (temp - 1500000) * 0.3; temp = 1500000; }\n    if (temp > 1200000) { tax_new += (temp - 1200000) * 0.2; temp = 1200000; }\n    if (temp > 900000)  { tax_new += (temp - 900000) * 0.15; temp = 900000; }\n    if (temp > 600000)  { tax_new += (temp - 600000) * 0.1; temp = 600000; }\n    if (temp > 300000)  { tax_new += (temp - 300000) * 0.05; temp = 300000; }\n  }\n  \n  const deductions_old = 50000 + 150000 + 25000;\n  const net_old = Math.max(0, income - deductions_old);\n  let tax_old = 0;\n  if (net_old > 500000) {\n    let temp = net_old;\n    if (temp > 1000000) { tax_old += (temp - 1000000) * 0.3; temp = 1000000; }\n    if (temp > 500000)  { tax_old += (temp - 500000) * 0.2; temp = 500000; }\n    if (temp > 250000)  { tax_old += (temp - 250000) * 0.05; temp = 250000; }\n  }\n  \n  const fmt = (num) => num.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });\n  \n  return `Annual Taxable Income: INR ${fmt(income)}\nTax New Regime: INR ${fmt(tax_new)}\nTax Old Regime: INR ${fmt(tax_old)}`;\n} catch (e) {\n  return 'Error: ' + e.message;\n}"
+      },
+      "type": "@n8n/n8n-nodes-langchain.toolCode",
+      "typeVersion": 1,
+      "position": [
+        1100,
+        650
+      ],
+      "id": "node-Tax Calculator",
+      "name": "Tax Calculator"
+    },
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "finance-advisor",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        100,
+        200
+      ],
+      "id": "webhook-trigger",
+      "name": "Webhook Trigger",
+      "webhookId": "f7d7c6b5-a4a3-42e1-9c6a-8b9a0c1d2e3f"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "type": "string"
+          },
+          "conditions": [
+            {
+              "leftValue": "={{ $json.body.message }}",
+              "rightValue": ".{5,}",
+              "operator": {
+                "type": "string",
+                "operation": "regex"
+              }
+            },
+            {
+              "leftValue": "={{ $json.body.session_id }}",
+              "rightValue": ".+",
+              "operator": {
+                "type": "string",
+                "operation": "regex"
+              }
+            }
+          ],
+          "combinator": "and"
+        }
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        300,
+        200
+      ],
+      "id": "check-payload",
+      "name": "Check Payload"
+    },
+    {
+      "parameters": {
+        "httpCode": "422",
+        "responseMode": "custom",
+        "responseBody": "{\n  \"error\": \"Unprocessable Entity\",\n  \"detail\": \"Invalid Request: 'message' and 'session_id' are required and cannot be empty.\"\n}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1,
+      "position": [
+        300,
+        50
+      ],
+      "id": "respond-error-422",
+      "name": "Respond Error 422"
+    },
+    {
+      "parameters": {
+        "prompt": "Task: Analyze the user's financial details from the query: \"{{ $('Webhook Trigger').item.json.body.message }}\"\n\nIdentify if income and expenses are provided. If present, run the 'Budget Calculator' tool with the extracted income and expenses. Use the outputs to determine the 50-30-20 budget breakdown (needs, wants, savings) and target emergency fund size.\n\nREACT CONTROL:\n- If the 'Budget Calculator' tool already returned the required calculation, STOP. Do not call tools with identical inputs again. Immediately compile the output and write the final response.",
+        "options": {
+          "systemMessage": "Role: Budget Analyst\nGoal: Analyze raw budget calculator outputs, evaluate spending behaviour, assess savings discipline, identify emergency preparedness risks, and provide tailored budgeting recommendations.\nBackstory: You are a senior budgeting strategist. You take raw mathematical numbers (income, expenses, surplus, savings rate, emergency fund target) and perform the logical analysis:\n- Evaluate if the current savings rate is healthy (e.g., check if it is below the target 20% threshold).\n- Assess if monthly expenses leave enough surplus to cover basic security.\n- Recommend explicit spending behaviors and savings adjustments.\n- Advise on how many months it will take to complete the emergency fund given the monthly surplus.\n\nTool usage instructions:\n- You have access to the 'Budget Calculator' tool.\n- If the user query has financial details (income/expenses), run the tool first.\n- If the tool returns an error about missing parameters, STOP tool execution, record what is missing, and explain that budget calculations could not be performed due to missing information.\n- Once the tool returns results, STOP tool calling and generate your analysis.",
+          "maxIterations": 3
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 1.4,
+      "position": [
+        500,
+        200
+      ],
+      "id": "budget-agent",
+      "name": "Budget Agent"
+    },
+    {
+      "parameters": {
+        "prompt": "Task: Analyze the user's investment options and goals from the query: \"{{ $('Webhook Trigger').item.json.body.message }}\"\nBudget context: {{ $('Budget Agent').item.json.output }}\n\nIf any SIP, monthly investment, or investment compounding projections are requested or implied, run the 'SIP Calculator' tool with the corresponding monthly investment, expected return rate, and tenure. Formulate recommendations on short-term vs long-term assets (mutual funds, PPF, gold).\n\nREACT CONTROL:\n- If the 'SIP Calculator' tool already returned the required calculation, STOP. Do not call tools with identical inputs again. Immediately compile the output and write the final response.",
+        "options": {
+          "systemMessage": "Role: Investment Advisor\nGoal: Analyze compound SIP calculator projections, evaluate wealth accumulation trends, assess investment suitability for short/long term goals, and provide customized asset allocation recommendations.\nBackstory: You are a professional wealth advisor. You analyze raw compounding calculations (monthly SIP, maturity amounts, tenure, interest) and execute the financial reasoning:\n- Identify if the compounding returns meet target wealth projections.\n- Formulate specific portfolio structures (e.g., allocations to equity mutual funds, PPF, gold, or debt).\n- Outline short-term vs long-term investment suitability.\n\nTool usage instructions:\n- You have access to the 'SIP Calculator' tool.\n- If the user query has investment parameters, run the tool first.\n- If the tool returns an error about missing parameters, STOP tool execution, record what is missing, and explain that investment analysis is limited because required compounding inputs are missing.\n- Once the tool returns results, STOP tool calling and generate your roadmap.",
+          "maxIterations": 3
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 1.4,
+      "position": [
+        700,
+        200
+      ],
+      "id": "investment-agent",
+      "name": "Investment Agent"
+    },
+    {
+      "parameters": {
+        "prompt": "Task: Analyze loan liabilities, outstanding debt, or EMI questions from the query: \"{{ $('Webhook Trigger').item.json.body.message }}\"\nBudget context: {{ $('Budget Agent').item.json.output }}\n\nIf a loan principal, interest rate, and tenure are present or implied, run the 'EMI Calculator' tool to compute the monthly EMI payment, total interest, and payoff schedule. Outline payoff priority using the debt avalanche or debt snowball method.\n\nREACT CONTROL:\n- If the 'EMI Calculator' tool already returned the required calculation, STOP. Do not call tools with identical inputs again. Immediately compile the output and write the final response.",
+        "options": {
+          "systemMessage": "Role: Debt Management Expert\nGoal: Analyze raw loan EMI calculations, evaluate outstanding liability burden, identify debt default/repayment risks, and formulate prioritized payoff strategies.\nBackstory: You are a professional debt management consultant. You inspect raw numbers (principal, interest rates, tenure, EMI amounts) and perform the advisory logic:\n- Evaluate if the monthly EMI relative to income represents high debt burden risk.\n- Formulate customized payoff strategies (avalanche vs snowball priority).\n- Outline interest-minimization advice for loans.\n\nTool usage instructions:\n- You have access to the 'EMI Calculator' tool.\n- If the user query has loan details, run the tool first.\n- If the tool returns an error about missing parameters, STOP tool execution, record what is missing, and explain that debt strategies cannot be calculated because required loan details (principal, rate, tenure) are missing.\n- Once the tool returns results, STOP tool calling and generate your advice.",
+          "maxIterations": 3
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 1.4,
+      "position": [
+        900,
+        200
+      ],
+      "id": "debt-agent",
+      "name": "Debt Agent"
+    },
+    {
+      "parameters": {
+        "prompt": "Task: Analyze income tax saving and optimization queries from the query: \"{{ $('Webhook Trigger').item.json.body.message }}\"\nBudget context: {{ $('Budget Agent').item.json.output }}\n\nIf income is provided or implied, run the 'Tax Calculator' tool to estimate tax liabilities under the Old vs New Regime comparison. Guide on maximizing tax deductions under Section 80C and 80D.\n\nREACT CONTROL:\n- If the 'Tax Calculator' tool already returned the required calculation, STOP. Do not call tools with identical inputs again. Immediately compile the output and write the final response.",
+        "options": {
+          "systemMessage": "Role: Tax Consultant\nGoal: Analyze raw old and new regime tax estimations, compare regime tax efficiency, determine the optimal regime choice, and identify legal tax-saving optimizations.\nBackstory: You are a chartered accountant. You take raw tax values (old regime tax, new regime tax, income) and execute the tax planning logic:\n- Compare the liabilities and determine which regime is the optimal choice for this client.\n- Formulate specific legal tax deductions to optimize savings (e.g. suggesting Section 80C, 80D, PPF, NPS, or Health Insurance thresholds if the Old Regime is beneficial).\n\nTool usage instructions:\n- You have access to the 'Tax Calculator' tool.\n- If the user query has income details, run the tool first.\n- If the tool returns an error about missing parameters, STOP tool execution, record what is missing, and explain that tax comparisons cannot be computed because the required annual income is missing.\n- Once the tool returns results, STOP tool calling and generate your recommendations.",
+          "maxIterations": 3
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 1.4,
+      "position": [
+        1100,
+        200
+      ],
+      "id": "tax-agent",
+      "name": "Tax Agent"
+    },
+    {
+      "parameters": {
+        "prompt": "Task: Generate a comprehensive client-ready financial advisory report. Synthesize all computations, allocations, payoff schedules, and tax options compiled by the previous tasks.\n\nOriginal query context: \"{{ $('Webhook Trigger').item.json.body.message }}\"\n\nBudget Node Output: {{ $('Budget Agent').item.json.output }}\nInvestment Node Output: {{ $('Investment Agent').item.json.output }}\nDebt Node Output: {{ $('Debt Agent').item.json.output }}\nTax Node Output: {{ $('Tax Agent').item.json.output }}\n\nInstructions on missing information:\n- If any of the previous nodes reported missing information errors (such as missing principal, interest rates, or investment amounts), explicitly list those missing parameters in the 'recommendations' or 'action_plan' section as required details to complete the plan.\n- Ensure you note that additional information is required in the report.\n\nYour final response MUST be a single, valid JSON object matching the following structure. Do not include markdown code block formatting (no ```json). Return ONLY the raw JSON object string:\n\n{\n  \"summary\": \"A high-level synthesis of the user's financial state incorporating the calculation outputs or noting missing parameters.\",\n  \"recommendations\": [\"Recommendation 1\", \"Recommendation 2\"],\n  \"risks\": [\"Risk 1\", \"Risk 2\"],\n  \"action_plan\": [\"Step 1\", \"Step 2\"]\n}",
+        "options": {
+          "systemMessage": "Role: Chief Financial Planner\nGoal: Consolidate calculations, budgets, investments, tax optimization, and debt payoff priority into a final client-ready advisory report matching the requested JSON format.\nBackstory: You are a senior wealth management director. You synthesize raw numbers, analyses, and strategies from budgeting, tax, debt, and investment experts into a single structured report. Your job is to format the report as a clean JSON object containing summary, recommendations, risks, and action plan. If any required information is missing, you must mention it explicitly in the report.",
+          "maxIterations": 3
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 1.4,
+      "position": [
+        1300,
+        200
+      ],
+      "id": "planner-agent",
+      "name": "Financial Planner"
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={\n(() => {\n  let raw = $json.output || '';\n  try {\n    const cleaned = raw.replace(/```json|```/g, '').trim();\n    return JSON.parse(cleaned);\n  } catch (e) {}\n  return { summary: raw };\n})()\n}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1,
+      "position": [
+        1500,
+        200
+      ],
+      "id": "respond-to-webhook",
+      "name": "Respond to Webhook"
+    }
+  ],
+  "connections": {
+    "Ollama LLM": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Budget Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Investment Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Debt Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Tax Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Financial Planner",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Window Buffer Memory": {
+      "ai_memory": [
+        [
+          {
+            "node": "Budget Agent",
+            "type": "ai_memory",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Investment Agent",
+            "type": "ai_memory",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Debt Agent",
+            "type": "ai_memory",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Tax Agent",
+            "type": "ai_memory",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Financial Planner",
+            "type": "ai_memory",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Budget Calculator": {
+      "ai_tool": [
+        [
+          {
+            "node": "Budget Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "SIP Calculator": {
+      "ai_tool": [
+        [
+          {
+            "node": "Investment Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "EMI Calculator": {
+      "ai_tool": [
+        [
+          {
+            "node": "Debt Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Tax Calculator": {
+      "ai_tool": [
+        [
+          {
+            "node": "Tax Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Webhook Trigger": {
+      "main": [
+        [
+          {
+            "node": "Check Payload",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check Payload": {
+      "main": [
+        [
+          {
+            "node": "Budget Agent",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Respond Error 422",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Budget Agent": {
+      "main": [
+        [
+          {
+            "node": "Investment Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Investment Agent": {
+      "main": [
+        [
+          {
+            "node": "Debt Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Debt Agent": {
+      "main": [
+        [
+          {
+            "node": "Tax Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Tax Agent": {
+      "main": [
+        [
+          {
+            "node": "Financial Planner",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Financial Planner": {
+      "main": [
+        [
+          {
+            "node": "Respond to Webhook",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {},
+  "meta": {
+    "instanceId": "local-instance"
+  }
+}
