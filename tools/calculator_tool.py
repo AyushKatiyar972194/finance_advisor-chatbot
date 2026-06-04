@@ -1,19 +1,29 @@
 from langchain.tools import tool
+from typing import Optional
 import logging
 import math
 
 logger = logging.getLogger(__name__)
 
-@tool("Budget Calculator")
-def budget_calculator(monthly_income: float, monthly_expenses: float) -> str:
+@tool("budget_calculator")
+def budget_calculator(monthly_income: Optional[float] = None, monthly_expenses: Optional[float] = None) -> str:
     """
     Calculates 50-30-20 budget splits, surplus, savings rate, and 6-month emergency fund target size.
     Input parameters:
-      monthly_income: Total monthly income as a number.
-      monthly_expenses: Total monthly expenses as a number.
+      monthly_income: Total monthly income as a number. Can be null/None.
+      monthly_expenses: Total monthly expenses as a number. Can be null/None.
     """
     try:
         logger.info(f"Budget Calculator Tool invoked: income={monthly_income}, expenses={monthly_expenses}")
+        if monthly_income is None or monthly_expenses is None:
+            missing = []
+            if monthly_income is None: missing.append("monthly_income")
+            if monthly_expenses is None: missing.append("monthly_expenses")
+            return f"Error: Missing required inputs for Budget calculation. Required: {', '.join(missing)}."
+
+        if monthly_income <= 0:
+            return "Error: Income must be greater than zero."
+
         surplus = monthly_income - monthly_expenses
         savings_rate = (surplus / monthly_income) * 100 if monthly_income > 0 else 0
         needs_50 = monthly_income * 0.50
@@ -36,17 +46,24 @@ def budget_calculator(monthly_income: float, monthly_expenses: float) -> str:
         logger.error(f"Error in budget calculator tool: {e}")
         return f"Budget calculation error: {str(e)}"
 
-@tool("SIP Calculator")
-def sip_calculator(monthly_investment: float, expected_return_rate: float, years: int) -> str:
+@tool("sip_calculator")
+def sip_calculator(monthly_investment: Optional[float] = None, expected_return_rate: Optional[float] = None, years: Optional[int] = None) -> str:
     """
     Calculates SIP total invested amount, estimated compound maturity returns, and wealth gained.
     Input parameters:
-      monthly_investment: Monthly SIP investment amount as a number.
-      expected_return_rate: Annual expected return rate as percentage (e.g. 12.0 for 12%).
-      years: Investment duration in years as a number.
+      monthly_investment: Monthly SIP investment amount as a number. Can be null/None.
+      expected_return_rate: Annual expected return rate as percentage (e.g. 12.0 for 12%). Can be null/None.
+      years: Investment duration in years as a number. Can be null/None.
     """
     try:
         logger.info(f"SIP Calculator Tool invoked: monthly={monthly_investment}, rate={expected_return_rate}, years={years}")
+        if monthly_investment is None or expected_return_rate is None or years is None:
+            missing = []
+            if monthly_investment is None: missing.append("monthly_investment")
+            if expected_return_rate is None: missing.append("expected_return_rate")
+            if years is None: missing.append("years")
+            return f"Error: Missing required inputs for SIP calculation. Required: {', '.join(missing)}."
+
         rate_monthly = expected_return_rate / 12 / 100
         months = years * 12
         total_invested = monthly_investment * months
@@ -66,17 +83,24 @@ def sip_calculator(monthly_investment: float, expected_return_rate: float, years
         logger.error(f"Error in SIP calculator tool: {e}")
         return f"SIP calculation error: {str(e)}"
 
-@tool("EMI Calculator")
-def emi_calculator(principal: float, annual_interest_rate: float, years: int) -> str:
+@tool("emi_calculator")
+def emi_calculator(principal: Optional[float] = None, annual_interest_rate: Optional[float] = None, years: Optional[int] = None) -> str:
     """
     Calculates monthly EMI principal installments, total payment, and total interest payable for a loan.
     Input parameters:
-      principal: The loan principal amount as a number.
-      annual_interest_rate: The annual interest rate as percentage (e.g. 8.5 for 8.5%).
-      years: The loan tenure in years as a number.
+      principal: The loan principal amount as a number. Can be null/None.
+      annual_interest_rate: The annual interest rate as percentage (e.g. 8.5 for 8.5%). Can be null/None.
+      years: The loan tenure in years as a number. Can be null/None.
     """
     try:
         logger.info(f"EMI Calculator Tool invoked: principal={principal}, rate={annual_interest_rate}, years={years}")
+        if principal is None or annual_interest_rate is None or years is None:
+            missing = []
+            if principal is None: missing.append("principal")
+            if annual_interest_rate is None: missing.append("annual_interest_rate")
+            if years is None: missing.append("years")
+            return f"Error: Missing required inputs for EMI calculation. Required: {', '.join(missing)}."
+
         rate_monthly = annual_interest_rate / 12 / 100
         months = years * 12
         # Standard EMI Formula: P * r * (1+r)^n / ((1+r)^n - 1)
@@ -96,16 +120,18 @@ def emi_calculator(principal: float, annual_interest_rate: float, years: int) ->
         logger.error(f"Error in EMI calculator tool: {e}")
         return f"EMI calculation error: {str(e)}"
 
-@tool("Tax Calculator")
-def tax_calculator(annual_income: float) -> str:
+@tool("tax_calculator")
+def tax_calculator(annual_income: Optional[float] = None) -> str:
     """
     Estimates income tax liability under Old and New regimes for a given annual taxable income.
     Input parameters:
-      annual_income: Total annual taxable income as a number.
+      annual_income: Total annual taxable income as a number. Can be null/None.
     """
     try:
         logger.info(f"Tax Calculator Tool invoked: annual_income={annual_income}")
-        
+        if annual_income is None:
+            return "Error: Missing required inputs for Tax calculation. Required: annual_income."
+
         # New Tax Regime Calculation (FY 2024-25 / AY 2025-26)
         net_new = max(0.0, annual_income - 75000.0)
         tax_new = 0.0

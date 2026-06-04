@@ -21,7 +21,7 @@ with st.sidebar:
     # Simple connection check indicator
     try:
         req = urllib.request.Request(f"{api_url}/health", method="GET")
-        with urllib.request.urlopen(req, timeout=2) as resp:
+        with urllib.request.urlopen(req, timeout=10) as resp:
             data = json.loads(resp.read().decode())
             if data.get("status") == "healthy":
                 st.success("🟢 API Status: Connected")
@@ -83,8 +83,8 @@ if prompt := st.chat_input("Describe your financial situation..."):
                     headers={"Content-Type": "application/json"}
                 )
                 
-                # Execute HTTP Request (with a high timeout of 10 minutes to allow CrewAI runs)
-                with urllib.request.urlopen(req, timeout=600) as response:
+                # Execute HTTP Request (no timeout to allow slow CPU-bound CrewAI runs to complete)
+                with urllib.request.urlopen(req, timeout=None) as response:
                     res_data = json.loads(response.read().decode("utf-8"))
                     ai_response = res_data.get("response", "No response received.")
                 

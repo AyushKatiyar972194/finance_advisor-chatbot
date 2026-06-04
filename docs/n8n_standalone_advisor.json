@@ -1,6 +1,112 @@
 {
-  "name": "n8n Standalone Financial Advisor Chatbot",
+  "name": "Personal Finance Advisor Standalone Workflow",
   "nodes": [
+    {
+      "parameters": {
+        "model": "llama3.2:3b",
+        "options": {}
+      },
+      "credentials": {
+        "ollamaApi": {
+          "id": "q7TjuZ4SY4TN4wHF",
+          "name": "Ollama account"
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOllama",
+      "typeVersion": 1,
+      "position": [
+        800,
+        500
+      ],
+      "id": "ollama_llm",
+      "name": "ollama_llm"
+    },
+    {
+      "parameters": {
+        "sessionIdType": "customKey",
+        "sessionKey": "={{ $('webhook_trigger').first().json.body.session_id || 'default' }}"
+      },
+      "type": "@n8n/n8n-nodes-langchain.memoryBufferWindow",
+      "typeVersion": 1.2,
+      "position": [
+        400,
+        500
+      ],
+      "id": "window_buffer_memory",
+      "name": "window_buffer_memory"
+    },
+    {
+      "parameters": {
+        "name": "budget_calculator",
+        "description": "Custom JS implementation of Budget Calculator.",
+        "jsCode": "try {\n  let income = null;\n  let expenses = null;\n  \n  if (query && typeof query === 'object') {\n    income = typeof query.monthly_income === 'number' ? query.monthly_income : (parseFloat(query.monthly_income) || null);\n    expenses = typeof query.monthly_expenses === 'number' ? query.monthly_expenses : (parseFloat(query.monthly_expenses) || null);\n  }\n  \n  if (income === null || expenses === null) {\n    let text = '';\n    if (typeof query === 'string') {\n      text = query;\n    } else if (query && typeof query === 'object') {\n      text = query.query || query.input || '';\n    }\n    \n    const parseNum = (matchResult) => {\n      if (!matchResult) return null;\n      let val = parseFloat(matchResult[1]);\n      const unit = (matchResult[2] || '').toLowerCase();\n      if (unit.startsWith('k')) val *= 1000;\n      else if (unit.startsWith('l')) val *= 100000;\n      else if (unit.startsWith('m')) val *= 1000000;\n      return val;\n    };\n    \n    if (income === null) {\n      income = parseNum(text.match(/(?:income|earn|salary|inflow)\\D*(\\d+(?:\\.\\d+)?)\\s*(k|lakh|l|m)?/i));\n    }\n    if (expenses === null) {\n      expenses = parseNum(text.match(/(?:expense|spend|outgo|cost|bill)\\D*(\\d+(?:\\.\\d+)?)\\s*(k|lakh|l|m)?/i));\n    }\n    \n    if (income === null || expenses === null) {\n      const numbers = [];\n      const numRegex = /(\\d+(?:\\.\\d+)?)\\s*(k|lakh|l|m)?/gi;\n      let m;\n      while ((m = numRegex.exec(text)) !== null) {\n        let val = parseFloat(m[1]);\n        const unit = (m[2] || '').toLowerCase();\n        if (unit.startsWith('k')) val *= 1000;\n        else if (unit.startsWith('l')) val *= 100000;\n        else if (unit.startsWith('m')) val *= 1000000;\n        numbers.push(val);\n      }\n      if (numbers.length >= 2) {\n        if (income === null && expenses === null) {\n          income = Math.max(numbers[0], numbers[1]);\n          expenses = Math.min(numbers[0], numbers[1]);\n        } else if (income === null) {\n          income = numbers.find(n => n !== expenses) || expenses * 1.5;\n        } else if (expenses === null) {\n          expenses = numbers.find(n => n !== income) || income * 0.6;\n        }\n      }\n    }\n  }\n  \n  if (income === null || expenses === null) {\n    const missing = [];\n    if (income === null) missing.push('monthly_income');\n    if (expenses === null) missing.push('monthly_expenses');\n    return `Error: Missing required inputs for Budget calculation. Required: ${missing.join(', ')}.`;\n  }\n  \n  if (income <= 0) return 'Error: Income must be greater than zero.';\n  \n  const surplus = income - expenses;\n  const savings_rate = (surplus / income) * 100;\n  const needs_50 = income * 0.50;\n  const wants_30 = income * 0.30;\n  const savings_20 = income * 0.20;\n  const emergency_fund = expenses * 6;\n  \n  const fmt = (num) => num.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });\n  \n  return `Monthly Income: INR ${fmt(income)}\nMonthly Expenses: INR ${fmt(expenses)}\nMonthly Surplus: INR ${fmt(surplus)}\nSavings Rate: ${savings_rate.toFixed(2)}%\n50-30-20 Allocation Plan:\n- Needs (50%): INR ${fmt(needs_50)}\n- Wants (30%): INR ${fmt(wants_30)}\n- Savings (20%): INR ${fmt(savings_20)}\n6-Month Emergency Fund Target: INR ${fmt(emergency_fund)}`;\n} catch (e) {\n  return 'Error: ' + e.message;\n}",
+        "specifyInputSchema": true,
+        "schemaType": "manual",
+        "inputSchema": "{\"type\": \"object\", \"properties\": {\"monthly_income\": {\"type\": [\"number\", \"string\", \"null\"], \"description\": \"Total monthly income. Can be null if unknown.\"}, \"monthly_expenses\": {\"type\": [\"number\", \"string\", \"null\"], \"description\": \"Total monthly expenses. Can be null if unknown.\"}}}"
+      },
+      "type": "@n8n/n8n-nodes-langchain.toolCode",
+      "typeVersion": 1,
+      "position": [
+        500,
+        650
+      ],
+      "id": "budget_calculator",
+      "name": "budget_calculator"
+    },
+    {
+      "parameters": {
+        "name": "sip_calculator",
+        "description": "Custom JS implementation of SIP Calculator.",
+        "jsCode": "try {\n  let sip = null;\n  let rate_annual = null;\n  let years = null;\n  \n  if (query && typeof query === 'object') {\n    sip = typeof query.monthly_investment === 'number' ? query.monthly_investment : (parseFloat(query.monthly_investment) || null);\n    rate_annual = typeof query.expected_return_rate === 'number' ? query.expected_return_rate : (parseFloat(query.expected_return_rate) || null);\n    years = typeof query.years === 'number' ? query.years : (parseInt(query.years) || null);\n  }\n  \n  if (sip === null || rate_annual === null || years === null) {\n    let text = '';\n    if (typeof query === 'string') {\n      text = query;\n    } else if (query && typeof query === 'object') {\n      text = query.query || query.input || '';\n    }\n    \n    const parseNum = (matchResult) => {\n      if (!matchResult) return null;\n      let val = parseFloat(matchResult[1]);\n      const unit = (matchResult[2] || '').toLowerCase();\n      if (unit.startsWith('k')) val *= 1000;\n      else if (unit.startsWith('l')) val *= 100000;\n      else if (unit.startsWith('m')) val *= 1000000;\n      return val;\n    };\n    \n    if (sip === null) {\n      sip = parseNum(text.match(/(?:sip|monthly|invest|saving)\\D*(\\d+(?:\\.\\d+)?)\\s*(k|lakh|l|m)?/i));\n    }\n    if (rate_annual === null) {\n      const pctMatch = text.match(/(\\d+(?:\\.\\d+)?)\\s*%/);\n      if (pctMatch) {\n        rate_annual = parseFloat(pctMatch[1]);\n      } else {\n        const rateMatch = text.match(/(?:rate|return|interest|yield)\\D*(\\d+(?:\\.\\d+)?)/i);\n        if (rateMatch) rate_annual = parseFloat(rateMatch[1]);\n      }\n    }\n    if (years === null) {\n      const yrMatch = text.match(/(\\d+)\\s*(?:year|yr|y)/i);\n      if (yrMatch) {\n        years = parseInt(yrMatch[1]);\n      } else {\n        const yearsMatch = text.match(/(?:year|duration|time|period)\\D*(\\d+)/i);\n        if (yearsMatch) years = parseInt(yearsMatch[1]);\n      }\n    }\n  }\n  \n  if (sip === null || rate_annual === null || years === null) {\n    const missing = [];\n    if (sip === null) missing.push('monthly_investment');\n    if (rate_annual === null) missing.push('expected_return_rate');\n    if (years === null) missing.push('years');\n    return `Error: Missing required inputs for SIP calculation. Required: ${missing.join(', ')}.`;\n  }\n  \n  const rate_monthly = rate_annual / 12 / 100;\n  const months = years * 12;\n  const total_invested = sip * months;\n  const maturity_value = sip * ((Math.pow(1 + rate_monthly, months) - 1) / rate_monthly) * (1 + rate_monthly);\n  const estimated_returns = maturity_value - total_invested;\n  \n  const fmt = (num) => num.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });\n  \n  return `Monthly SIP: INR ${fmt(sip)}\nTenure: ${years} years (${months} months)\nExpected Return Rate: ${rate_annual.toFixed(2)}%\nTotal Invested: INR ${fmt(total_invested)}\nMaturity Value: INR ${fmt(maturity_value)}\nWealth Gained: INR ${fmt(estimated_returns)}`;\n} catch (e) {\n  return 'Error: ' + e.message;\n}",
+        "specifyInputSchema": true,
+        "schemaType": "manual",
+        "inputSchema": "{\"type\": \"object\", \"properties\": {\"monthly_investment\": {\"type\": [\"number\", \"string\", \"null\"], \"description\": \"Monthly investment amount. Can be null if unknown.\"}, \"expected_return_rate\": {\"type\": [\"number\", \"string\", \"null\"], \"description\": \"Expected return rate as a percentage (e.g. 12 for 12%). Can be null if unknown.\"}, \"years\": {\"type\": [\"number\", \"string\", \"null\"], \"description\": \"Tenure of investment in years. Can be null if unknown.\"}}}"
+      },
+      "type": "@n8n/n8n-nodes-langchain.toolCode",
+      "typeVersion": 1,
+      "position": [
+        700,
+        650
+      ],
+      "id": "sip_calculator",
+      "name": "sip_calculator"
+    },
+    {
+      "parameters": {
+        "name": "emi_calculator",
+        "description": "Custom JS implementation of EMI Calculator.",
+        "jsCode": "try {\n  let principal = null;\n  let rate_annual = null;\n  let years = null;\n  \n  if (query && typeof query === 'object') {\n    principal = typeof query.principal === 'number' ? query.principal : (parseFloat(query.principal) || null);\n    rate_annual = typeof query.annual_interest_rate === 'number' ? query.annual_interest_rate : (parseFloat(query.annual_interest_rate) || null);\n    years = typeof query.years === 'number' ? query.years : (parseInt(query.years) || null);\n  }\n  \n  if (principal === null || rate_annual === null || years === null) {\n    let text = '';\n    if (typeof query === 'string') {\n      text = query;\n    } else if (query && typeof query === 'object') {\n      text = query.query || query.input || '';\n    }\n    \n    const parseNum = (matchResult) => {\n      if (!matchResult) return null;\n      let val = parseFloat(matchResult[1]);\n      const unit = (matchResult[2] || '').toLowerCase();\n      if (unit.startsWith('k')) val *= 1000;\n      else if (unit.startsWith('l')) val *= 100000;\n      else if (unit.startsWith('m')) val *= 1000000;\n      return val;\n    };\n    \n    if (principal === null) {\n      principal = parseNum(text.match(/(?:principal|loan|debt|amount)\\D*(\\d+(?:\\.\\d+)?)\\s*(k|lakh|l|m)?/i));\n    }\n    if (rate_annual === null) {\n      const pctMatch = text.match(/(\\d+(?:\\.\\d+)?)\\s*%/);\n      if (pctMatch) {\n        rate_annual = parseFloat(pctMatch[1]);\n      } else {\n        const rateMatch = text.match(/(?:rate|interest)\\D*(\\d+(?:\\.\\d+)?)/i);\n        if (rateMatch) rate_annual = parseFloat(rateMatch[1]);\n      }\n    }\n    if (years === null) {\n      const yrMatch = text.match(/(\\d+)\\s*(?:year|yr|y)/i);\n      if (yrMatch) {\n        years = parseInt(yrMatch[1]);\n      } else {\n        const yearsMatch = text.match(/(?:year|duration|time|period|tenure)\\D*(\\d+)/i);\n        if (yearsMatch) years = parseInt(yearsMatch[1]);\n      }\n    }\n  }\n  \n  if (principal === null || rate_annual === null || years === null) {\n    const missing = [];\n    if (principal === null) missing.push('principal');\n    if (rate_annual === null) missing.push('annual_interest_rate');\n    if (years === null) missing.push('years');\n    return `Error: Missing required inputs for EMI calculation. Required: ${missing.join(', ')}.`;\n  }\n  \n  const rate_monthly = rate_annual / 12 / 100;\n  const months = years * 12;\n  const emi = principal * rate_monthly * Math.pow(1 + rate_monthly, months) / (Math.pow(1 + rate_monthly, months) - 1);\n  const total_payment = emi * months;\n  const total_interest = total_payment - principal;\n  \n  const fmt = (num) => num.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });\n  \n  return `Loan Principal: INR ${fmt(principal)}\nTenure: ${years} years (${months} months)\nAnnual Interest Rate: ${rate_annual.toFixed(2)}%\nMonthly EMI: INR ${fmt(emi)}\nTotal Payment: INR ${fmt(total_payment)}\nTotal Interest Payable: INR ${fmt(total_interest)}`;\n} catch (e) {\n  return 'Error: ' + e.message;\n}",
+        "specifyInputSchema": true,
+        "schemaType": "manual",
+        "inputSchema": "{\"type\": \"object\", \"properties\": {\"principal\": {\"type\": [\"number\", \"string\", \"null\"], \"description\": \"Loan principal amount. Can be null if unknown.\"}, \"annual_interest_rate\": {\"type\": [\"number\", \"string\", \"null\"], \"description\": \"Annual interest rate as percentage (e.g. 8.5 for 8.5%). Can be null if unknown.\"}, \"years\": {\"type\": [\"number\", \"string\", \"null\"], \"description\": \"Loan tenure in years. Can be null if unknown.\"}}}"
+      },
+      "type": "@n8n/n8n-nodes-langchain.toolCode",
+      "typeVersion": 1,
+      "position": [
+        900,
+        650
+      ],
+      "id": "emi_calculator",
+      "name": "emi_calculator"
+    },
+    {
+      "parameters": {
+        "name": "tax_calculator",
+        "description": "Custom JS implementation of Tax Calculator.",
+        "jsCode": "try {\n  let income = null;\n  \n  if (query && typeof query === 'object') {\n    income = typeof query.annual_income === 'number' ? query.annual_income : (parseFloat(query.annual_income) || null);\n  }\n  \n  if (income === null) {\n    let text = '';\n    if (typeof query === 'string') {\n      text = query;\n    } else if (query && typeof query === 'object') {\n      text = query.query || query.input || '';\n    }\n    \n    const parseNum = (matchResult) => {\n      if (!matchResult) return null;\n      let val = parseFloat(matchResult[1]);\n      const unit = (matchResult[2] || '').toLowerCase();\n      if (unit.startsWith('k')) val *= 1000;\n      else if (unit.startsWith('l')) val *= 100000;\n      else if (unit.startsWith('m')) val *= 1000000;\n      return val;\n    };\n    \n    income = parseNum(text.match(/(?:income|earn|salary|annual|taxable)\\D*(\\d+(?:\\.\\d+)?)\\s*(k|lakh|l|m)?/i));\n    if (income === null) {\n      const numbers = [];\n      const numRegex = /(\\d+(?:\\.\\d+)?)\\s*(k|lakh|l|m)?/gi;\n      let m;\n      while ((m = numRegex.exec(text)) !== null) {\n        let val = parseFloat(m[1]);\n        const unit = (m[2] || '').toLowerCase();\n        if (unit.startsWith('k')) val *= 1000;\n        else if (unit.startsWith('l')) val *= 100000;\n        else if (unit.startsWith('m')) val *= 1000000;\n        numbers.push(val);\n      }\n      income = numbers.find(n => n > 1000) || null;\n    }\n  }\n  \n  if (income === null) {\n    return 'Error: Missing required inputs for Tax calculation. Required: annual_income.';\n  }\n  \n  if (income > 0 && income < 100000) {\n    income = income * 12;\n  }\n  \n  const net_new = Math.max(0, income - 75000);\n  let tax_new = 0;\n  if (net_new > 700000) {\n    let temp = net_new;\n    if (temp > 1500000) { tax_new += (temp - 1500000) * 0.3; temp = 1500000; }\n    if (temp > 1200000) { tax_new += (temp - 1200000) * 0.2; temp = 1200000; }\n    if (temp > 900000)  { tax_new += (temp - 900000) * 0.15; temp = 900000; }\n    if (temp > 600000)  { tax_new += (temp - 600000) * 0.1; temp = 600000; }\n    if (temp > 300000)  { tax_new += (temp - 300000) * 0.05; temp = 300000; }\n  }\n  \n  const deductions_old = 50000 + 150000 + 25000;\n  const net_old = Math.max(0, income - deductions_old);\n  let tax_old = 0;\n  if (net_old > 500000) {\n    let temp = net_old;\n    if (temp > 1000000) { tax_old += (temp - 1000000) * 0.3; temp = 1000000; }\n    if (temp > 500000)  { tax_old += (temp - 500000) * 0.2; temp = 500000; }\n    if (temp > 250000)  { tax_old += (temp - 250000) * 0.05; temp = 250000; }\n  }\n  \n  const fmt = (num) => num.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });\n  \n  return `Annual Taxable Income: INR ${fmt(income)}\nTax New Regime: INR ${fmt(tax_new)}\nTax Old Regime: INR ${fmt(tax_old)}`;\n} catch (e) {\n  return 'Error: ' + e.message;\n}",
+        "specifyInputSchema": true,
+        "schemaType": "manual",
+        "inputSchema": "{\"type\": \"object\", \"properties\": {\"annual_income\": {\"type\": [\"number\", \"string\", \"null\"], \"description\": \"Total annual income. Can be null if unknown.\"}}}"
+      },
+      "type": "@n8n/n8n-nodes-langchain.toolCode",
+      "typeVersion": 1,
+      "position": [
+        1100,
+        650
+      ],
+      "id": "tax_calculator",
+      "name": "tax_calculator"
+    },
     {
       "parameters": {
         "httpMethod": "POST",
@@ -9,13 +115,14 @@
         "options": {}
       },
       "type": "n8n-nodes-base.webhook",
-      "typeVersion": 1,
+      "typeVersion": 2.1,
       "position": [
         100,
-        280
+        200
       ],
-      "id": "webhook-trigger",
-      "name": "Webhook Trigger"
+      "id": "webhook_trigger",
+      "name": "webhook_trigger",
+      "webhookId": "f7d7c6b5-a4a3-42e1-9c6a-8b9a0c1d2e3f"
     },
     {
       "parameters": {
@@ -27,287 +134,363 @@
           },
           "conditions": [
             {
-              "leftValue": "={{ $('Webhook Trigger').item.json.body.message }}",
-              "rightValue": "",
-              "operator": "regex",
-              "regex": ".{5,}"
+              "leftValue": "={{ $json.body.message }}",
+              "rightValue": ".{5,}",
+              "operator": {
+                "type": "string",
+                "operation": "regex"
+              }
             },
             {
-              "leftValue": "={{ $('Webhook Trigger').item.json.body.session_id }}",
-              "rightValue": "",
-              "operator": "regex",
-              "regex": ".+"
+              "leftValue": "={{ $json.body.session_id }}",
+              "rightValue": ".+",
+              "operator": {
+                "type": "string",
+                "operation": "regex"
+              }
             }
           ],
           "combinator": "and"
-        },
-        "connections": {
-          "true": [
-            [
-              {
-                "node": "AI Agent",
-                "type": "main",
-                "index": 0
-              }
-            ]
-          ],
-          "false": [
-            [
-              {
-                "node": "Respond Error 422",
-                "type": "main",
-                "index": 0
-              }
-            ]
-          ]
         }
       },
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.2,
       "position": [
         300,
-        280
+        200
       ],
-      "id": "check-payload",
-      "name": "Check Payload"
+      "id": "check_payload",
+      "name": "check_payload"
     },
     {
       "parameters": {
         "httpCode": "422",
         "responseMode": "custom",
-        "responseBody": "{\n  \"error\": \"Unprocessable Entity\",\n  \"detail\": \"Invalid Request: 'message' (minimum 5 characters) and 'session_id' are required and cannot be empty.\"\n}",
+        "responseBody": "{\n  \"error\": \"Unprocessable Entity\",\n  \"detail\": \"Invalid Request: 'message' and 'session_id' are required and cannot be empty.\"\n}",
         "options": {}
       },
       "type": "n8n-nodes-base.respondToWebhook",
       "typeVersion": 1,
       "position": [
         300,
-        100
+        50
       ],
-      "id": "respond-error-422",
-      "name": "Respond Error 422"
+      "id": "respond_error_422",
+      "name": "respond_error_422"
     },
     {
       "parameters": {
-        "prompt": "={{ $('Webhook Trigger').item.json.body.message }}",
+        "agent": "toolsAgent",
+        "promptType": "define",
+        "text": "Task: Analyze the user's financial details from the query: \"{{ $('webhook_trigger').first().json.body.message }}\"\n\nIdentify if income and expenses are provided. If present, run the 'budget_calculator' tool with the extracted income and expenses. Use the outputs to determine the 50-30-20 budget breakdown (needs, wants, savings) and target emergency fund size. Analyze savings rate, spending behavior, emergency fund preparedness, and generate recommendations. If inputs are missing, list the missing inputs.\n\nREACT CONTROL:\n- If the 'budget_calculator' tool already returned the required calculation, STOP. Do not call the tool again. Immediately compile the output and write the final response.",
         "options": {
-          "systemMessage": "You are a professional Personal Financial Advisor Chatbot. Help the user analyze their financial situation.\n\nYou have access to four specialized tools for financial calculations. You MUST use these tools to perform calculations whenever the user's query involves numbers, rates, values, or financial planning. Do not perform calculations yourself; rely on the tool outputs.\n\nCRITICAL: You must invoke the correct tool based on these rules:\n1. For budgeting, income, expenses, savings rate, surplus, or emergency funds, you MUST call 'budget_tool'.\n2. For SIP (Systematic Investment Plan), investments, mutual funds, rate of return, or compounding growth, you MUST call 'investment_tool'.\n3. For loans, EMI, debt reduction, interest on loans, or mortgages, you MUST call 'debt_tool'.\n4. For income tax, comparing Old vs New tax regimes, tax slabs, or tax planning, you MUST call 'tax_tool'.\n\nAfter getting the tool results, summarize them clearly and construct your final output.\nYour final response MUST be a single, valid JSON object matching the following schema exactly. Do not include any greeting, explanation, markdown formatting (no ```json code blocks), or text outside the JSON:\n\n{\n  \"summary\": \"A high-level synthesis of the user's financial state including calculation outputs.\",\n  \"recommendations\": [\"Recommendation 1\", \"Recommendation 2\"],\n  \"risks\": [\"Risk 1\", \"Risk 2\"],\n  \"action_plan\": [\"Step 1\", \"Step 2\"]\n}\n\nReturn ONLY the raw JSON object."
+          "systemMessage": "Role: Budget Advisor\nGoal: Analyze income and expenses and evaluate savings behavior.\nBackstory: You are a senior budgeting strategist. You take raw mathematical numbers (income, expenses, surplus, savings rate, emergency fund target) and evaluate the savings behavior, spending patterns, and emergency preparedness. If required inputs are missing, STOP tool execution, list the missing inputs, and explain that budget calculations could not be performed due to missing information. Tool rule: Use budget_calculator at most once. If tool output already exists, STOP tool calling and generate final answer.",
+          "maxIterations": 5
         }
       },
       "type": "@n8n/n8n-nodes-langchain.agent",
-      "typeVersion": 1.4,
+      "typeVersion": 1.7,
       "position": [
-        550,
-        280
+        500,
+        200
       ],
-      "id": "ai-agent",
-      "name": "AI Agent"
+      "id": "budget_agent",
+      "name": "budget_agent"
     },
     {
       "parameters": {
-        "model": "llama3.2:3b",
-        "baseUrl": "http://localhost:11434"
+        "agent": "toolsAgent",
+        "promptType": "define",
+        "text": "Task: Analyze the user's investment options and goals from the query: \"{{ $('webhook_trigger').first().json.body.message }}\"\nBudget context: {{ $('budget_agent').item.json.output }}\n\nIf any SIP, monthly investment, or investment compounding projections are requested or implied, run the 'sip_calculator' tool with the corresponding monthly investment, expected return rate, and tenure. Formulate recommendations on short-term vs long-term assets (mutual funds, PPF, gold). Analyze wealth accumulation and recommend investment allocation.\n\nREACT CONTROL:\n- If the 'sip_calculator' tool already returned the required calculation, STOP. Do not call the tool again. Immediately compile the output and write the final response.",
+        "options": {
+          "systemMessage": "Role: Investment Advisor\nGoal: Analyze investment opportunities and wealth creation.\nBackstory: You are a professional wealth advisor. You analyze compounding calculations and execute the investment strategy. If investment details exist, run the sip_calculator tool. Analyze wealth accumulation, recommend investment allocation, and explain short-term vs long-term strategy. If inputs are missing, STOP tool calling and list the missing inputs. Tool rule: Use sip_calculator at most once. If tool output already exists, STOP tool calling and generate final answer.",
+          "maxIterations": 5
+        }
       },
-      "type": "@n8n/n8n-nodes-langchain.lmOllama",
-      "typeVersion": 1,
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 1.7,
       "position": [
-        480,
-        480
+        700,
+        200
       ],
-      "id": "ollama-model",
-      "name": "Ollama LLM"
+      "id": "investment_agent",
+      "name": "investment_agent"
     },
     {
       "parameters": {
-        "sessionId": "={{ $('Webhook Trigger').item.json.body.session_id || 'default' }}"
+        "agent": "toolsAgent",
+        "promptType": "define",
+        "text": "Task: Analyze loan liabilities, outstanding debt, or EMI questions from the query: \"{{ $('webhook_trigger').first().json.body.message }}\"\nBudget context: {{ $('budget_agent').item.json.output }}\n\nIf a loan principal, interest rate, and tenure are present or implied, run the 'emi_calculator' tool to compute the monthly EMI payment, total interest, and payoff schedule. Outline payoff priority using the debt avalanche or debt snowball method. Recommend payoff strategy and highlight risks.\n\nREACT CONTROL:\n- If the 'emi_calculator' tool already returned the required calculation, STOP. Do not call the tool again. Immediately compile the output and write the final response.",
+        "options": {
+          "systemMessage": "Role: Debt Advisor\nGoal: Analyze debt burden and repayment strategy.\nBackstory: You are a professional debt management consultant. You inspect raw numbers (principal, interest rates, tenure, EMI amounts) and perform the repayment reasoning. If loan details exist, run the emi_calculator. Analyze debt burden, recommend payoff strategy, and highlight risks. If inputs are missing, STOP tool calling and list the inputs. Tool rule: Use emi_calculator at most once. If tool output already exists, STOP tool calling and generate final answer.",
+          "maxIterations": 5
+        }
       },
-      "type": "@n8n/n8n-nodes-langchain.memoryBufferWindow",
-      "typeVersion": 1.2,
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 1.7,
       "position": [
-        600,
-        480
+        900,
+        200
       ],
-      "id": "buffer-memory",
-      "name": "Window Buffer Memory"
+      "id": "debt_agent",
+      "name": "debt_agent"
     },
     {
       "parameters": {
-        "name": "budget_tool",
-        "description": "Use this tool for any questions regarding budgeting, monthly income, expenses, savings rate, surplus, or emergency funds. Input should contain income and expenses.",
-        "jsCode": "try {\n  const text = query || '';\n  const parseNum = (matchResult) => {\n    if (!matchResult) return null;\n    let val = parseFloat(matchResult[1]);\n    const unit = (matchResult[2] || '').toLowerCase();\n    if (unit.startsWith('k')) val *= 1000;\n    else if (unit.startsWith('l')) val *= 100000;\n    else if (unit.startsWith('m')) val *= 1000000;\n    return val;\n  };\n  \n  let income = parseNum(text.match(/(?:income|earn|salary|inflow)\\D*(\\d+(?:\\.\\d+)?)\\s*(k|lakh|l|m)?/i));\n  let expenses = parseNum(text.match(/(?:expense|spend|outgo|cost|bill)\\D*(\\d+(?:\\.\\d+)?)\\s*(k|lakh|l|m)?/i));\n  \n  if (income === null || expenses === null) {\n    const numbers = [];\n    const numRegex = /(\\d+(?:\\.\\d+)?)\\s*(k|lakh|l|m)?/gi;\n    let m;\n    while ((m = numRegex.exec(text)) !== null) {\n      let val = parseFloat(m[1]);\n      const unit = (m[2] || '').toLowerCase();\n      if (unit.startsWith('k')) val *= 1000;\n      else if (unit.startsWith('l')) val *= 100000;\n      else if (unit.startsWith('m')) val *= 1000000;\n      numbers.push(val);\n    }\n    if (numbers.length >= 2) {\n      if (income === null && expenses === null) {\n        income = Math.max(numbers[0], numbers[1]);\n        expenses = Math.min(numbers[0], numbers[1]);\n      } else if (income === null) {\n        income = numbers.find(n => n !== expenses) || expenses * 1.5;\n      } else if (expenses === null) {\n        expenses = numbers.find(n => n !== income) || income * 0.6;\n      }\n    }\n  }\n  \n  if (income === null) income = 50000;\n  if (expenses === null) expenses = 30000;\n  if (income <= 0) return JSON.stringify({ error: 'Income must be greater than zero.' });\n  \n  const surplus = income - expenses;\n  const savings_rate = (surplus / income) * 100;\n  const emergency_fund_target = expenses * 6;\n  const months_to_save = surplus > 0 ? Math.ceil(emergency_fund_target / surplus) : -1;\n  \n  return JSON.stringify({\n    monthly_income: income,\n    monthly_expenses: expenses,\n    monthly_surplus: surplus,\n    savings_rate_pct: Math.round(savings_rate * 100) / 100,\n    needs_50: Math.round(income * 0.5),\n    wants_30: Math.round(income * 0.3),\n    savings_20: Math.round(income * 0.2),\n    emergency_fund_target_6_months: emergency_fund_target,\n    months_to_complete_emergency_fund: months_to_save\n  });\n} catch (e) {\n  return 'Error: ' + e.message;\n}"
+        "agent": "toolsAgent",
+        "promptType": "define",
+        "text": "Task: Analyze income tax saving and optimization queries from the query: \"{{ $('webhook_trigger').first().json.body.message }}\"\nBudget context: {{ $('budget_agent').item.json.output }}\n\nIf income is provided or implied, run the 'tax_calculator' tool to estimate tax liabilities under the Old vs New Regime comparison. Guide on maximizing tax deductions under Section 80C and 80D, comparing old vs new regime, and suggesting legal tax-saving opportunities.\n\nREACT CONTROL:\n- If the 'tax_calculator' tool already returned the required calculation, STOP. Do not call the tool again. Immediately compile the output and write the final response.",
+        "options": {
+          "systemMessage": "Role: Tax Advisor\nGoal: Analyze tax efficiency and tax-saving opportunities.\nBackstory: You are a chartered accountant. You take raw tax values (old regime tax, new regime tax, income) and compare the tax efficiency under old and new regimes, suggesting legal tax-saving opportunities. If inputs are missing, STOP tool calling and list the inputs. Tool rule: Use tax_calculator at most once. If tool output already exists, STOP tool calling and generate final answer.",
+          "maxIterations": 5
+        }
       },
-      "type": "@n8n/n8n-nodes-langchain.toolCustom",
-      "typeVersion": 1,
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 1.7,
       "position": [
-        720,
-        480
+        1100,
+        200
       ],
-      "id": "budget-tool",
-      "name": "Budgeting Tool"
+      "id": "tax_agent",
+      "name": "tax_agent"
     },
     {
       "parameters": {
-        "name": "investment_tool",
-        "description": "Use this tool for any questions regarding SIP (Systematic Investment Plan), investments, mutual funds, rate of return, or compounding growth. Input should contain monthly investment, return rate, and years.",
-        "jsCode": "try {\n  const text = query || '';\n  const parseNum = (matchResult) => {\n    if (!matchResult) return null;\n    let val = parseFloat(matchResult[1]);\n    const unit = (matchResult[2] || '').toLowerCase();\n    if (unit.startsWith('k')) val *= 1000;\n    else if (unit.startsWith('l')) val *= 100000;\n    else if (unit.startsWith('m')) val *= 1000000;\n    return val;\n  };\n  \n  let sip = parseNum(text.match(/(?:sip|monthly|invest)\\D*(\\d+(?:\\.\\d+)?)\\s*(k|lakh|l|m)?/i));\n  let rate_annual = null;\n  const pctMatch = text.match(/(\\d+(?:\\.\\d+)?)\\s*%/);\n  if (pctMatch) {\n    rate_annual = parseFloat(pctMatch[1]);\n  } else {\n    const rateMatch = text.match(/(?:rate|return|interest|yield)\\D*(\\d+(?:\\.\\d+)?)/i);\n    if (rateMatch) rate_annual = parseFloat(rateMatch[1]);\n  }\n  \n  let years = null;\n  const yrMatch = text.match(/(\\d+)\\s*(?:year|yr|y)/i);\n  if (yrMatch) {\n    years = parseInt(yrMatch[1]);\n  } else {\n    const yearsMatch = text.match(/(?:year|duration|time|period)\\D*(\\d+)/i);\n    if (yearsMatch) years = parseInt(yearsMatch[1]);\n  }\n  \n  if (sip === null) {\n    const numbers = [];\n    const numRegex = /(\\d+(?:\\.\\d+)?)\\s*(k|lakh|l|m)?/gi;\n    let m;\n    while ((m = numRegex.exec(text)) !== null) {\n      let val = parseFloat(m[1]);\n      const unit = (m[2] || '').toLowerCase();\n      if (unit.startsWith('k')) val *= 1000;\n      else if (unit.startsWith('l')) val *= 100000;\n      else if (unit.startsWith('m')) val *= 1000000;\n      numbers.push(val);\n    }\n    sip = numbers.find(n => n > 100) || 5000;\n  }\n  \n  if (rate_annual === null) rate_annual = 12;\n  if (years === null) years = 10;\n  \n  const rate_monthly = rate_annual / 12 / 100;\n  const months = years * 12;\n  const total_invested = sip * months;\n  const maturity_value = sip * ((Math.pow(1 + rate_monthly, months) - 1) / rate_monthly) * (1 + rate_monthly);\n  \n  return JSON.stringify({\n    monthly_sip: sip,\n    annual_rate_pct: rate_annual,\n    duration_years: years,\n    total_invested: Math.round(total_invested),\n    maturity_value: Math.round(maturity_value),\n    estimated_returns: Math.round(maturity_value - total_invested)\n  });\n} catch (e) {\n  return 'Error: ' + e.message;\n}"
+        "agent": "toolsAgent",
+        "promptType": "define",
+        "text": "Task: Generate a comprehensive client-ready financial advisory report. Synthesize all computations, allocations, payoff schedules, and tax options compiled by the previous tasks.\n\nOriginal query context: \"{{ $('webhook_trigger').first().json.body.message }}\"\n\nBudget Node Output: {{ $('budget_agent').item.json.output }}\nInvestment Node Output: {{ $('investment_agent').item.json.output }}\nDebt Node Output: {{ $('debt_agent').item.json.output }}\nTax Node Output: {{ $('tax_agent').item.json.output }}\n\nInstructions on missing information:\n- If any of the previous nodes reported missing information errors (such as missing principal, interest rates, or investment amounts), explicitly list those missing parameters in the 'recommendations' or 'action_plan' section as required details to complete the plan.\n- Ensure you note that additional information is required in the report.\n\nYour final response MUST be a single, valid JSON object matching the following structure. Do not include markdown code block formatting (no ```json). Return ONLY the raw JSON object string:\n\n{\n  \"summary\": \"A high-level synthesis of the user's financial state incorporating the calculation outputs or noting missing parameters.\",\n  \"recommendations\": [\"Recommendation 1\", \"Recommendation 2\"],\n  \"risks\": [\"Risk 1\", \"Risk 2\"],\n  \"action_plan\": [\"Step 1\", \"Step 2\"]\n}",
+        "options": {
+          "systemMessage": "Role: Chief Financial Planner\nGoal: Combine all previous agent outputs into one final report.\nBackstory: You are a senior wealth management director. You synthesize raw numbers, analyses, and strategies from budgeting, tax, debt, and investment experts into a single structured report. Your job is to format the report as a clean JSON object containing summary, recommendations, risks, and action plan. If any required information is missing, you must mention it explicitly in the report.",
+          "maxIterations": 5
+        }
       },
-      "type": "@n8n/n8n-nodes-langchain.toolCustom",
-      "typeVersion": 1,
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 1.7,
       "position": [
-        830,
-        480
+        1300,
+        200
       ],
-      "id": "investment-tool",
-      "name": "Investment Advisor Tool"
-    },
-    {
-      "parameters": {
-        "name": "debt_tool",
-        "description": "Use this tool for any questions regarding loans, EMI (Equated Monthly Installment), interest payments, debt payoff, or mortgages. Input should contain loan amount, interest rate, and tenure in years.",
-        "jsCode": "try {\n  const text = query || '';\n  const parseNum = (matchResult) => {\n    if (!matchResult) return null;\n    let val = parseFloat(matchResult[1]);\n    const unit = (matchResult[2] || '').toLowerCase();\n    if (unit.startsWith('k')) val *= 1000;\n    else if (unit.startsWith('l')) val *= 100000;\n    else if (unit.startsWith('m')) val *= 1000000;\n    return val;\n  };\n  \n  let principal = parseNum(text.match(/(?:principal|loan|debt|amount)\\D*(\\d+(?:\\.\\d+)?)\\s*(k|lakh|l|m)?/i));\n  let rate_annual = null;\n  const pctMatch = text.match(/(\\d+(?:\\.\\d+)?)\\s*%/);\n  if (pctMatch) {\n    rate_annual = parseFloat(pctMatch[1]);\n  } else {\n    const rateMatch = text.match(/(?:rate|interest)\\D*(\\d+(?:\\.\\d+)?)/i);\n    if (rateMatch) rate_annual = parseFloat(rateMatch[1]);\n  }\n  \n  let years = null;\n  const yrMatch = text.match(/(\\d+)\\s*(?:year|yr|y)/i);\n  if (yrMatch) {\n    years = parseInt(yrMatch[1]);\n  } else {\n    const yearsMatch = text.match(/(?:year|duration|time|period|tenure)\\D*(\\d+)/i);\n    if (yearsMatch) years = parseInt(yearsMatch[1]);\n  }\n  \n  if (principal === null) {\n    const numbers = [];\n    const numRegex = /(\\d+(?:\\.\\d+)?)\\s*(k|lakh|l|m)?/gi;\n    let m;\n    while ((m = numRegex.exec(text)) !== null) {\n      let val = parseFloat(m[1]);\n      const unit = (m[2] || '').toLowerCase();\n      if (unit.startsWith('k')) val *= 1000;\n      else if (unit.startsWith('l')) val *= 100000;\n      else if (unit.startsWith('m')) val *= 1000000;\n      numbers.push(val);\n    }\n    principal = numbers.find(n => n > 1000) || 500000;\n  }\n  \n  if (rate_annual === null) rate_annual = 8.5;\n  if (years === null) years = 5;\n  \n  const rate_monthly = rate_annual / 12 / 100;\n  const months = years * 12;\n  const emi = principal * rate_monthly * Math.pow(1 + rate_monthly, months) / (Math.pow(1 + rate_monthly, months) - 1);\n  const total_payment = emi * months;\n  \n  return JSON.stringify({\n    loan_principal: principal,\n    annual_rate_pct: rate_annual,\n    duration_years: years,\n    monthly_emi: Math.round(emi * 100) / 100,\n    total_payment: Math.round(total_payment * 100) / 100,\n    total_interest: Math.round((total_payment - principal) * 100) / 100\n  });\n} catch (e) {\n  return 'Error: ' + e.message;\n}"
-      },
-      "type": "@n8n/n8n-nodes-langchain.toolCustom",
-      "typeVersion": 1,
-      "position": [
-        940,
-        480
-      ],
-      "id": "debt-tool",
-      "name": "Debt Planning Tool"
-    },
-    {
-      "parameters": {
-        "name": "tax_tool",
-        "description": "Use this tool for any questions regarding income tax calculation, old vs new regime tax comparison, or tax planning. Input should contain annual or monthly income.",
-        "jsCode": "try {\n  const text = query || '';\n  const parseNum = (matchResult) => {\n    if (!matchResult) return null;\n    let val = parseFloat(matchResult[1]);\n    const unit = (matchResult[2] || '').toLowerCase();\n    if (unit.startsWith('k')) val *= 1000;\n    else if (unit.startsWith('l')) val *= 100000;\n    else if (unit.startsWith('m')) val *= 1000000;\n    return val;\n  };\n  \n  let income = parseNum(text.match(/(?:income|earn|salary|annual|taxable)\\D*(\\d+(?:\\.\\d+)?)\\s*(k|lakh|l|m)?/i));\n  if (income === null) {\n    const numbers = [];\n    const numRegex = /(\\d+(?:\\.\\d+)?)\\s*(k|lakh|l|m)?/gi;\n    let m;\n    while ((m = numRegex.exec(text)) !== null) {\n      let val = parseFloat(m[1]);\n      const unit = (m[2] || '').toLowerCase();\n      if (unit.startsWith('k')) val *= 1000;\n      else if (unit.startsWith('l')) val *= 100000;\n      else if (unit.startsWith('m')) val *= 1000000;\n      numbers.push(val);\n    }\n    income = numbers.find(n => n > 1000) || 600000;\n  }\n  \n  if (income > 0 && income < 100000) {\n    income = income * 12;\n  }\n  \n  const net_new = Math.max(0, income - 75000);\n  let tax_new = 0;\n  if (net_new > 700000) {\n    let temp = net_new;\n    if (temp > 1500000) { tax_new += (temp - 1500000) * 0.3; temp = 1500000; }\n    if (temp > 1200000) { tax_new += (temp - 1200000) * 0.2; temp = 1200000; }\n    if (temp > 900000)  { tax_new += (temp - 900000) * 0.15; temp = 900000; }\n    if (temp > 600000)  { tax_new += (temp - 600000) * 0.1; temp = 600000; }\n    if (temp > 300000)  { tax_new += (temp - 300000) * 0.05; temp = 300000; }\n  }\n  \n  const deductions_old = 50000 + 150000 + 25000;\n  const net_old = Math.max(0, income - deductions_old);\n  let tax_old = 0;\n  if (net_old > 500000) {\n    let temp = net_old;\n    if (temp > 1000000) { tax_old += (temp - 1000000) * 0.3; temp = 1000000; }\n    if (temp > 500000)  { tax_old += (temp - 500000) * 0.2; temp = 500000; }\n    if (temp > 250000)  { tax_old += (temp - 250000) * 0.05; temp = 250000; }\n  }\n  \n  const diff = Math.abs(tax_new - tax_old);\n  const recommended = tax_new < tax_old ? 'New Regime' : 'Old Regime';\n  \n  return JSON.stringify({\n    annual_income: income,\n    standard_deduction: income > 75000 ? 75000 : income,\n    taxable_income_new: net_new,\n    taxable_income_old: net_old,\n    tax_new_regime: Math.round(tax_new),\n    tax_old_regime: Math.round(tax_old),\n    tax_savings: Math.round(diff),\n    recommended_regime: recommended,\n    guidance: `Old Regime tax calculated assuming common deductions of 2,25,000 INR (including 50k Standard Deduction, 1.5L 80C, and 25k 80D). New Regime tax includes 75,000 INR Standard Deduction. The ${recommended} is more tax efficient by ${Math.round(diff)} INR.`\n  });\n} catch (e) {\n  return 'Error: ' + e.message;\n}"
-      },
-      "type": "@n8n/n8n-nodes-langchain.toolCustom",
-      "typeVersion": 1,
-      "position": [
-        1050,
-        480
-      ],
-      "id": "tax-tool",
-      "name": "Tax Guidance Tool"
+      "id": "financial_planner",
+      "name": "financial_planner"
     },
     {
       "parameters": {
         "respondWith": "json",
-        "responseBody": "={\n(() => {\n  let raw = $json.output || '';\n  \n  // 1. Try standard cleaning and parsing\n  try {\n    const cleaned = raw.replace(/```json|```/g, '').trim();\n    return JSON.parse(cleaned);\n  } catch (e) {}\n\n  // 2. Try extracting JSON block between first { and last }\n  try {\n    const firstBrace = raw.indexOf('{');\n    const lastBrace = raw.lastIndexOf('}');\n    if (firstBrace !== -1 && lastBrace !== -1 && lastBrace > firstBrace) {\n      const jsonStr = raw.substring(firstBrace, lastBrace + 1);\n      return JSON.parse(jsonStr);\n    }\n  } catch (e) {}\n\n  // 3. Fallback: Parse using Regex if JSON is completely malformed or has text wrappers\n  try {\n    let summary = \"\";\n    let recommendations = [];\n    let risks = [];\n    let action_plan = [];\n\n    // Extract summary\n    const summaryMatch = raw.match(/\"summary\"\\s*:\\s*\"([\\s\\S]*?)\"/i) || raw.match(/summary:\\s*([^\\n]+)/i);\n    if (summaryMatch) {\n      summary = summaryMatch[1].trim();\n    } else {\n      const paragraphMatch = raw.match(/^([^\\n]+)/);\n      summary = paragraphMatch ? paragraphMatch[1].trim() : raw.substring(0, 200);\n    }\n\n    // Helper to extract list items from a section match\n    const extractList = (sectionText) => {\n      const doubleQuoted = sectionText.match(/\"([^\"]+)\"/g);\n      if (doubleQuoted && doubleQuoted.length > 0) {\n        return doubleQuoted.map(i => i.replace(/^\"|\"$/g, '').trim());\n      }\n      return sectionText\n        .split(/[\\n,;]/)\n        .map(l => l.replace(/^[-*\\d.\\s]+/, '').trim())\n        .filter(l => l.length > 3 && !l.includes('[') && !l.includes(']'));\n    };\n\n    // Extract recommendations\n    const recsMatch = raw.match(/\"recommendations\"\\s*:\\s*\\[([\\s\\S]*?)\\]/i) || raw.match(/recommendations:\\s*([\\s\\S]*?)(?:risks|action_plan|summary|$)/i);\n    if (recsMatch) {\n      recommendations = extractList(recsMatch[1]);\n    }\n\n    // Extract risks\n    const risksMatch = raw.match(/\"risks\"\\s*:\\s*\\[([\\s\\S]*?)\\]/i) || raw.match(/risks:\\s*([\\s\\S]*?)(?:action_plan|recommendations|summary|$)/i);\n    if (risksMatch) {\n      risks = extractList(risksMatch[1]);\n    }\n\n    // Extract action plan\n    const planMatch = raw.match(/\"action_plan\"\\s*:\\s*\\[([\\s\\S]*?)\\]/i) || raw.match(/action_plan:\\s*([\\s\\S]*?)(?:risks|recommendations|summary|$)/i);\n    if (planMatch) {\n      action_plan = extractList(planMatch[1]);\n    }\n\n    if (recommendations.length === 0) recommendations = [\"Please review your financial goals and adjust savings.\"];\n    if (risks.length === 0) risks = [\"Market volatility or lack of specific detailed financial inputs.\"];\n    if (action_plan.length === 0) action_plan = [\"Analyze monthly expenses\", \"Setup automated savings\"];\n\n    return {\n      summary: summary.replace(/\\\\\"/g, '\"').replace(/\\n/g, ' '),\n      recommendations: recommendations,\n      risks: risks,\n      action_plan: action_plan\n    };\n  } catch (e) {\n    return {\n      summary: raw.substring(0, 500) + \"...\",\n      recommendations: [\"Review savings and investments monthly.\"],\n      risks: [\"Automatic parsing failed. Review raw response.\"],\n      action_plan: [\"Re-submit query with standard format.\"]\n    };\n  }\n})()\n}",
+        "responseBody": "={\n(() => {\n  let raw = $json.output || '';\n  try {\n    const cleaned = raw.replace(/```json|```/g, '').trim();\n    JSON.parse(cleaned);\n    return cleaned;\n  } catch (e) {}\n  return JSON.stringify({ summary: raw });\n})()\n}",
         "options": {}
       },
       "type": "n8n-nodes-base.respondToWebhook",
       "typeVersion": 1,
       "position": [
-        780,
-        280
+        1500,
+        200
       ],
-      "id": "respond-to-webhook",
-      "name": "Respond to Webhook"
+      "id": "respond_to_webhook",
+      "name": "respond_to_webhook"
     }
   ],
   "connections": {
-    "Webhook Trigger": {
-      "main": [
+    "ollama_llm": {
+      "ai_languageModel": [
         [
           {
-            "node": "Check Payload",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Check Payload": {
-      "main": [
-        [
-          {
-            "node": "AI Agent",
-            "type": "main",
+            "node": "budget_agent",
+            "type": "ai_languageModel",
             "index": 0
           }
         ],
         [
           {
-            "node": "Respond Error 422",
-            "type": "main",
+            "node": "investment_agent",
+            "type": "ai_languageModel",
             "index": 0
           }
-        ]
-      ]
-    },
-    "AI Agent": {
-      "main": [
+        ],
         [
           {
-            "node": "Respond to Webhook",
-            "type": "main",
+            "node": "debt_agent",
+            "type": "ai_languageModel",
             "index": 0
           }
-        ]
-      ]
-    },
-    "Ollama LLM": {
-      "ai_languageModel": [
+        ],
         [
           {
-            "node": "AI Agent",
+            "node": "tax_agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "financial_planner",
             "type": "ai_languageModel",
             "index": 0
           }
         ]
       ]
     },
-    "Window Buffer Memory": {
+    "window_buffer_memory": {
       "ai_memory": [
         [
           {
-            "node": "AI Agent",
+            "node": "budget_agent",
+            "type": "ai_memory",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "investment_agent",
+            "type": "ai_memory",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "debt_agent",
+            "type": "ai_memory",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "tax_agent",
+            "type": "ai_memory",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "financial_planner",
             "type": "ai_memory",
             "index": 0
           }
         ]
       ]
     },
-    "Budgeting Tool": {
+    "budget_calculator": {
       "ai_tool": [
         [
           {
-            "node": "AI Agent",
+            "node": "budget_agent",
             "type": "ai_tool",
             "index": 0
           }
         ]
       ]
     },
-    "Investment Advisor Tool": {
+    "sip_calculator": {
       "ai_tool": [
         [
           {
-            "node": "AI Agent",
+            "node": "investment_agent",
             "type": "ai_tool",
             "index": 0
           }
         ]
       ]
     },
-    "Debt Planning Tool": {
+    "emi_calculator": {
       "ai_tool": [
         [
           {
-            "node": "AI Agent",
+            "node": "debt_agent",
             "type": "ai_tool",
             "index": 0
           }
         ]
       ]
     },
-    "Tax Guidance Tool": {
+    "tax_calculator": {
       "ai_tool": [
         [
           {
-            "node": "AI Agent",
+            "node": "tax_agent",
             "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "webhook_trigger": {
+      "main": [
+        [
+          {
+            "node": "check_payload",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "check_payload": {
+      "main": [
+        [
+          {
+            "node": "budget_agent",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "respond_error_422",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "budget_agent": {
+      "main": [
+        [
+          {
+            "node": "investment_agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "investment_agent": {
+      "main": [
+        [
+          {
+            "node": "debt_agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "debt_agent": {
+      "main": [
+        [
+          {
+            "node": "tax_agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "tax_agent": {
+      "main": [
+        [
+          {
+            "node": "financial_planner",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "financial_planner": {
+      "main": [
+        [
+          {
+            "node": "respond_to_webhook",
+            "type": "main",
             "index": 0
           }
         ]
