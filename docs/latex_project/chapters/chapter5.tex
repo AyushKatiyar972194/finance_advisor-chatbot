@@ -1,0 +1,12 @@
+\chapter{Conclusion}
+This project successfully demonstrates the design and execution of a local, privacy-first personal financial advisory chatbot using a multi-agent sequential workflow. By combining n8n visual automation, CrewAI agent orchestration, and local Ollama model hosting (\texttt{llama3.2:3b}), the system eliminates recurrent cloud subscription API costs while securing sensitive financial parameters. 
+
+The implementation highlights several key technical achievements:
+\begin{enumerate}
+    \item \textbf{Addressing Math Hallucinations}: By integrating dedicated JavaScript calculators, the system grounds the natural language capabilities of the LLM in verified mathematical formulas. This eliminates errors where the model tries to compute compound interest or loan amortization directly.
+    \item \textbf{Type-Safety in Tool Calling}: Local, lightweight language models often output numerical arguments wrapped in string quotes or omit required inputs. By creating a relaxed validation schema of \texttt{["number", "string", "null"]} and implementing explicit type coercion and fallback regex parsing in the tool scripts, we prevent execution crashes and make the system highly resilient.
+    \item \textbf{Privacy by Design}: Financial information is highly sensitive. Running the entire agent workflow locally means that user data is never uploaded to commercial servers or cloud APIs, adhering to strict data sovereignty and privacy guidelines.
+    \item \textbf{Cohesive Multi-Agent Orchestration}: Developing a sequential pipeline ensures that calculations from the Budget Agent are directly available to the subsequent Investment, Debt, and Tax Agents, allowing for contextually aligned planning that matches the user's cash flow surplus.
+\end{enumerate}
+
+In summary, the chatbot successfully bridges the gap between manual financial spreadsheets and expensive commercial wealth management software, offering a secure, automated, and personalized conversational advisor.

@@ -1,0 +1,233 @@
+\documentclass[12pt,a4paper]{report}
+
+% ==========================================
+% LATEX PACKAGES
+% ==========================================
+\usepackage[utf8]{inputenc}
+\usepackage[margin=1in]{geometry}
+\usepackage{graphicx}
+\usepackage{hyperref}
+\usepackage{titlesec}
+\usepackage{setspace}
+\usepackage{longtable}
+\usepackage{float}
+\usepackage{booktabs}
+\usepackage{array}
+\usepackage{listings}
+\usepackage{xcolor}
+\usepackage{fancyhdr}
+\usepackage{amsmath}
+\usepackage{newtxtext}
+\usepackage{newtxmath}
+\usepackage{enumitem}
+\usepackage{cite}
+
+% ==========================================
+% DOCUMENT FORMATTING & STYLING (Strict guidelines)
+% ==========================================
+\setstretch{1.2}
+\hypersetup{
+    colorlinks=true,
+    linkcolor=blue,
+    filecolor=magenta,      
+    urlcolor=cyan,
+    pdftitle={AI-Powered Personal Financial Advisor},
+    pdfpagemode=FullScreen,
+}
+
+% Bullet formatting rules: Use only (a), (b), (c) or (i), (ii), (iii)
+\setlist[enumerate,1]{label=(\alph*)}
+\setlist[enumerate,2]{label=(\roman*)}
+
+% Compact spacing
+\setlength{\textfloatsep}{8pt}
+\setlength{\floatsep}{6pt}
+\setlength{\intextsep}{6pt}
+\setlength{\abovecaptionskip}{3pt}
+\setlength{\belowcaptionskip}{2pt}
+\setlength{\parskip}{2pt plus 1pt minus 1pt}
+\setlength{\parindent}{18pt}
+
+% Header heights
+\pagestyle{fancy}
+\setlength{\headheight}{15pt}
+\fancyhf{}
+\fancyhead[L]{\slshape \leftmark}
+\fancyhead[R]{\thepage}
+\renewcommand{\headrulewidth}{0.4pt}
+
+% Headings styling (Strict guidelines: Size 16 bold uppercase for main, 14 bold for section)
+\titleformat{\chapter}[block]
+  {\normalfont\fontsize{16}{20}\bfseries\filcenter}
+  {CHAPTER \thechapter\\}
+  {0.5em}
+  {\uppercase}
+\titlespacing*{\chapter}{0pt}{-20pt}{20pt}
+
+\titleformat{\section}
+  {\normalfont\fontsize{14}{18}\bfseries}
+  {\thesection}
+  {1em}
+  {}
+\titlespacing*{\section}{0pt}{12pt}{6pt}
+
+\titleformat{\subsection}
+  {\normalfont\fontsize{12}{15}\bfseries}
+  {\thesubsection}
+  {1em}
+  {}
+\titlespacing*{\subsection}{0pt}{8pt}{4pt}
+
+% Code listing styles
+\definecolor{codegreen}{rgb}{0,0.6,0}
+\definecolor{codegray}{rgb}{0.5,0.5,0.5}
+\definecolor{codepurple}{rgb}{0.58,0,0.82}
+\definecolor{backcolour}{rgb}{0.96,0.96,0.94}
+
+\lstdefinestyle{mystyle}{
+    backgroundcolor=\color{backcolour},   
+    commentstyle=\color{codegreen},
+    keywordstyle=\color{blue},
+    numberstyle=\tiny\color{codegray},
+    stringstyle=\color{codepurple},
+    basicstyle=\ttfamily\footnotesize,
+    breakatwhitespace=false,         
+    breaklines=true,                 
+    captionpos=b,                    
+    keepspaces=true,                 
+    numbers=left,                    
+    numbersep=5pt,                  
+    showspaces=false,                
+    showstringspaces=false,
+    showtabs=false,                  
+    tabsize=2
+}
+\lstset{style=mystyle, aboveskip=6pt, belowskip=6pt}
+
+\lstdefinelanguage{JavaScript}{
+  keywords={break, case, catch, continue, debugger, default, delete, do, else, false, finally, for, function, if, in, instanceof, new, null, return, switch, this, throw, true, try, typeof, var, void, while, with, let, const, async, await},
+  morecomment=[l]{//},
+  morecomment=[s]{/*}{*/},
+  morestring=[b]',
+  morestring=[b]"
+}
+\lstdefinelanguage{json}{
+  literate=
+    *{:}{{{\color{blue}{:}}}}{1}
+     {,}{{{\color{blue}{,}}}}{1}
+     {\{}{{{\color{blue}{\{}}}}{1}
+     {\}}{{{\color{blue}{\}}}}}{1}
+     {[}{{{\color{blue}{[}}}}{1}
+     {]}{{{\color{blue}{[}}}}{1},
+  morestring=[b]"
+}
+
+% ==========================================
+% DOCUMENT CONTENT
+% ==========================================
+\begin{document}
+
+% --- COVER PAGE ---
+\begin{titlepage}
+\begin{center}
+    \singlespacing
+    \large
+    \textbf{Applied AI PROJECT REPORT}\\
+    \textbf{on}\\
+    \vspace{0.8cm}
+    \Large
+    \textbf{AI-Powered Personal Financial Advisor using n8n, Ollama and Multi-Agent Architecture}\\
+    \vspace{1.5cm}
+    \large
+    \textit{Submitted as partial fulfillment of}\\
+    \vspace{0.5cm}
+    \textbf{MASTER OF COMPUTER APPLICATION DEGREE}\\
+    \vspace{0.8cm}
+    \textbf{SESSION 2025-26}\\
+    \vspace{1.2cm}
+    \textit{By}\\
+    \vspace{0.3cm}
+    \textbf{Apeksha Goel}\\
+    \textbf{(2503201450028)}\\
+    \vspace{1.5cm}
+    \textit{Under the guidance of}\\
+    \vspace{0.5cm}
+    \noindent
+    \begin{minipage}[t]{0.45\textwidth}
+        \centering
+        \textbf{Priya Mishra}\\
+        Asst. Prof. (Sr. Scale)
+    \end{minipage}
+    \hfill
+    \begin{minipage}[t]{0.45\textwidth}
+        \centering
+        \textbf{Alpana Lodhi}\\
+        Asst. Prof.
+    \end{minipage}
+    \vspace{1.5cm}
+
+    \begin{figure}[H]
+        \centering
+        \includegraphics[width=3.5cm]{images/abes_logo.png}
+    \end{figure}
+    \vspace{0.5cm}
+    \textbf{ABES ENGINEERING COLLEGE, GHAZIABAD (032)}\\
+    \vspace{0.3cm}
+    \textit{AFFILIATED TO}\\
+    \vspace{0.3cm}
+    \textbf{Dr. A.P.J. ABDUL KALAM TECHNICAL UNIVERSITY, UTTAR PRADESH, LUCKNOW}
+\end{center}
+\end{titlepage}
+
+% --- PRELIMINARY PAGES ---
+\pagenumbering{roman}
+\setcounter{page}{1}
+
+% Certificate
+\newpage
+\begin{center}
+    \Large\textbf{CERTIFICATE}\\
+    \vspace{1.0cm}
+\end{center}
+\onehalfspacing
+This is to certify that the Applied AI Project Report entitled \textbf{``AI-Powered Personal Financial Advisor using n8n, Ollama and Multi-Agent Architecture''} is a record of work carried out by \textbf{Apeksha Goel} (Roll Number: \textbf{2503201450028}) under our supervision in partial fulfillment of the requirements for the award of the degree of Master of Computer Application (MCA) from ABES Engineering College, Ghaziabad, affiliated to Dr. A.P.J. Abdul Kalam Technical University, Lucknow.
+\vspace{1.5cm}
+
+\noindent
+\begin{minipage}[t]{0.45\textwidth}
+    \centering
+    \textbf{Priya Mishra}\\
+    Asst. Prof. (Sr. Scale)\\
+    Internal Guide
+\end{minipage}
+\hfill
+\begin{minipage}[t]{0.45\textwidth}
+    \centering
+    \textbf{Alpana Lodhi}\\
+    Asst. Prof.\\
+    Co-Guide
+\end{minipage}
+
+\vspace{1.5cm}
+\noindent
+\begin{minipage}[t]{1.0\textwidth}
+    \centering
+    \textbf{Head of Department}\\
+    Department of MCA\\
+    ABES Engineering College, Ghaziabad
+\end{minipage}
+
+
+% --- CHAPTERS ---
+\clearpage
+\pagenumbering{arabic}
+\setcounter{page}{1}
+
+\include{chapters/chapter1}
+\include{chapters/chapter2}
+\include{chapters/chapter3}
+\include{chapters/chapter4}
+\include{chapters/chapter5}
+\include{chapters/chapter6}
+
+\end{document}

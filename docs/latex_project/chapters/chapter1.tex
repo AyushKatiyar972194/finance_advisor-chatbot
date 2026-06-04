@@ -1,0 +1,26 @@
+\chapter{Introduction}
+In the modern economic landscape, financial planning has shifted from manual bookkeeping to digital advisory systems. Individuals face significant personal finance challenges, such as tracking diverse investments, establishing emergency reserves, evaluating loan amortization schedules, and selecting optimal tax regime paths. The complexity of financial planning often leads to cognitive fatigue, causing delayed decisions or financial mismanagement. Navigating these challenges requires specialized knowledge that is typically gatekept by high advisory fees or inaccessible financial planners.
+
+AI-powered advisory systems have emerged as a powerful solution. Large Language Models (LLMs) act as reasoning engines capable of parsing unstructured inputs, understanding intent, and generating customized advice in natural language. Running LLMs on cloud servers is common, but raises serious concerns regarding financial data privacy and monthly subscription costs. For an individual, sharing granular detail of monthly income, outstanding debts, and personal savings targets with commercial cloud APIs poses security hazards.
+
+To overcome this, local LLM execution via Ollama allows users to run models (such as Llama 3.2 3B) locally on consumer hardware, keeping personal financial information completely secure within the user's local network. Additionally, node-based automation platforms like n8n provide a visual orchestrator to connect triggers, memories, tools, and agents into sequential, collaborative pipelines without complex coding interfaces. This project presents a unified local framework that combines the visual orchestration of n8n with local Ollama models to build a privacy-first personal financial advisor.
+
+\section{Objective}
+The primary objective of this project is to develop a complete visual and local multi-agent chatbot system that automates the collection and synthesis of personal financial analyses:
+\begin{enumerate}
+    \item \textbf{Budget Analysis}: Automate the extraction of monthly income and expenses from natural queries to compute cash flows, formulate 50-30-20 budget allocations (Needs, Wants, and Savings), and establish target emergency fund sizes equivalent to 6 months of basic expenses.
+    \item \textbf{Investment Recommendations}: Implement systematic investment plan (SIP) simulation tools to compute compounding wealth results, analyzing long-term mutual funds, equity allocations, gold holdings, and Public Provident Fund (PPF) deposits.
+    \item \textbf{Loan Analysis}: Calculate monthly Equated Monthly Installment (EMI) values, loan repayment schedules, and interest rates, suggesting optimal payoff strategies such as the debt snowball (paying lowest balance first) or debt avalanche (paying highest interest rate first).
+    \item \textbf{Tax Optimization}: Model tax calculations under the Old and New tax regimes (specifically focusing on Indian tax structures), guiding users on legal deductions under Sections 80C and 80D.
+    \item \textbf{Automated Report Generation}: Combine findings from specialized agents into a single report, formatted as a JSON object mapping recommendations, risks, and action items, returned directly to the user interface.
+\end{enumerate}
+
+\section{Need of Project}
+The development of this project is driven by several key factors in the personal finance sector:
+\begin{enumerate}
+    \item \textbf{Lack of Affordable Financial Advisors}: Professional wealth management services are expensive and often targeted exclusively at high-net-worth individuals, leaving middle-class and low-income earners without guidance.
+    \item \textbf{Personalized Finance Planning}: Static calculators on websites are rigid, requiring structured inputs. This project uses AI to interpret natural, unstructured expressions and build personalized plans dynamically based on the user's specific context.
+    \item \textbf{Automation Benefits}: Linking budget margins directly to investment targets prevents unrealistic financial plans (e.g. recommending a high SIP that exceeds the user's monthly surplus). It automates what would otherwise require multiple independent spreadsheet formulas.
+    \item \textbf{AI-driven Decision Support}: LLMs act as cognitive interfaces that guide users through budgeting, tax, and debt scenarios, providing a user-friendly way to navigate complex financial rules and math calculations.
+    \item \textbf{Data Privacy and Trust}: Traditional financial portals sell user data to credit bureaus and lenders. A fully local system running via Ollama creates a trust barrier, ensuring the user's private data remains completely private.
+\end{enumerate}

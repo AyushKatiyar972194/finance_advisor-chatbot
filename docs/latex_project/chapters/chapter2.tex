@@ -1,0 +1,54 @@
+\chapter{Requirements}
+This chapter specifies the hardware configurations and software runtime environments required to execute the multi-agent chatbot system and host local LLM inference. Selecting appropriate requirements is crucial for guaranteeing low-latency response generation and avoiding memory crashes during execution.
+
+\section{Hardware Requirements}
+Running Large Language Models (LLMs) locally requires sufficient hardware resources, particularly processor cores and system memory (RAM). The weights of the Llama 3.2 3B parameter model are loaded directly into RAM (or VRAM if a dedicated GPU is available). Insufficient memory leads to system page faults or crashes during inference. The hardware specifications are listed in Table \ref{table:hardware_req}.
+
+\begin{table}[H]
+    \centering
+    \caption{Hardware Configuration Specifications}
+    \label{table:hardware_req}
+    \begin{tabular}{lll}
+        \toprule
+        \textbf{Component} & \textbf{Minimum Specification} & \textbf{Recommended Specification} \\
+        \midrule
+        Processor & Intel Core i5 / AMD Ryzen 5 (4 Cores) & Intel Core i7 / AMD Ryzen 7 (8 Cores) \\
+        System RAM & 8 GB DDR4 & 16 GB DDR4 / DDR5 \\
+        Storage Space & 20 GB Free SSD Storage & 40 GB Free NVMe SSD Storage \\
+        Network & 1 Mbps (for setup) & 10 Mbps+ High-speed Broadband \\
+        Graphics (Optional) & Shared Integrated Graphics & Dedicated GPU with 6GB+ VRAM \\
+        \bottomrule
+    \end{tabular}
+\end{table}
+
+The memory footprint of running Ollama with Llama 3.2 3B is approximately 2.2 GB. Under Windows, the operating system utilizes 3-4 GB of RAM, leaving the remaining capacity for the runtime processes of n8n, Python, and the web browser interface. High-speed SSD storage is recommended to decrease model loading times from disk into RAM when the Ollama service starts.
+
+\section{Software Requirements}
+The multi-agent orchestration pipeline is built using node-based automation platforms, Python scripting libraries, and local model servers. The software components are listed in Table \ref{table:software_req}.
+
+\begin{table}[H]
+    \centering
+    \caption{Software Environment Specifications}
+    \label{table:software_req}
+    \begin{tabular}{llp{7.5cm}}
+        \toprule
+        \textbf{Software} & \textbf{Version} & \textbf{Purpose} \\
+        \midrule
+        Windows 11 & 64-bit & Operating system platform for the local deployment. \\
+        Python & 3.11+ & Programming runtime for testing utilities and CrewAI script. \\
+        Ollama & v0.1.48+ & Hosting and serving local LLM models (e.g. Llama 3.2 3B). \\
+        n8n & v2.8.4 & Node-based visual multi-agent workflow manager. \\
+        CrewAI & v0.28+ & Python multi-agent orchestration framework. \\
+        LangChain & v0.1.0+ & Library for connecting local tools and model bindings. \\
+        VS Code & v1.85+ & Integrated Development Environment (IDE) for custom code. \\
+        Streamlit & v1.30+ & Web framework used to build the advisor user interface. \\
+        \bottomrule
+    \end{tabular}
+\end{table}
+
+\begin{enumerate}
+    \item \textbf{n8n Visual Workflow Engine}: Functions as the central API gateway and orchestrator. It executes the sequential agent chain, handles webhook triggers, maintains memory state, and executes Javascript tools.
+    \item \textbf{Ollama Local Model Server}: Exposes a local API endpoint on port 11434, executing model inference requests.
+    \item \textbf{CrewAI and LangChain Frameworks}: Used during the prototype design phase to validate agent role-play configurations and sequential task execution in Python before porting the logic to n8n nodes.
+    \item \textbf{Streamlit User Interface}: Provides a clean web form for users to interact with the chatbot, sending webhook queries and rendering the structured advisory output.
+\end{enumerate}

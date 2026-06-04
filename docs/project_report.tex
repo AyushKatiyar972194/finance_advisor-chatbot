@@ -1,0 +1,554 @@
+\documentclass[12pt,a4paper]{report}
+
+% ==========================================
+% LATEX PACKAGES
+% ==========================================
+\usepackage[utf8]{inputenc}
+\usepackage[margin=1in]{geometry}
+\usepackage{graphicx}
+\usepackage{hyperref}
+\usepackage{titlesec}
+\usepackage{setspace}
+\usepackage{longtable}
+\usepackage{float}
+\usepackage{booktabs}
+\usepackage{array}
+\usepackage{listings}
+\usepackage{xcolor}
+\usepackage{fancyhdr}
+\usepackage{amsmath}
+\usepackage{newtxtext}
+\usepackage{newtxmath}
+\usepackage{enumitem}
+
+% ==========================================
+% DOCUMENT FORMATTING & STYLING
+% ==========================================
+\setstretch{1.2}
+\hypersetup{
+    colorlinks=true,
+    linkcolor=blue,
+    filecolor=magenta,      
+    urlcolor=cyan,
+    pdftitle={AI-Powered Personal Finance Advisor Chatbot System using Multi-Agent Architecture},
+    pdfpagemode=FullScreen,
+}
+
+% Compact list spacing
+\setlist[itemize]{noitemsep, topsep=1pt, parsep=0pt, partopsep=0pt, itemsep=0pt}
+\setlist[enumerate]{noitemsep, topsep=1pt, parsep=0pt, partopsep=0pt, itemsep=0pt}
+\setlist[description]{noitemsep, topsep=1pt, parsep=0pt, partopsep=0pt, itemsep=0pt}
+
+% Compact figure/table spacing
+\setlength{\textfloatsep}{8pt}
+\setlength{\floatsep}{6pt}
+\setlength{\intextsep}{6pt}
+\setlength{\abovecaptionskip}{3pt}
+\setlength{\belowcaptionskip}{2pt}
+
+% Compact paragraph spacing
+\setlength{\parskip}{2pt plus 1pt minus 1pt}
+\setlength{\parindent}{18pt}
+
+% Heading formatting - Compact Spacing
+\titleformat{\chapter}[hang]{\normalfont\Large\bfseries}{\thechapter.}{0.8em}{}
+\titlespacing*{\chapter}{0pt}{-35pt}{10pt}
+\titleformat{\section}[hang]{\normalfont\large\bfseries}{\thesection}{0.8em}{}
+\titlespacing*{\section}{0pt}{6pt}{2pt}
+\titleformat{\subsection}[hang]{\normalfont\normalsize\bfseries}{\thesubsection}{0.8em}{}
+\titlespacing*{\subsection}{0pt}{4pt}{2pt}
+
+% Listings configuration for Python and JSON code block styling
+\definecolor{codegreen}{rgb}{0,0.6,0}
+\definecolor{codegray}{rgb}{0.5,0.5,0.5}
+\definecolor{codepurple}{rgb}{0.58,0,0.82}
+\definecolor{backcolour}{rgb}{0.96,0.96,0.94}
+
+\lstdefinestyle{mystyle}{
+    backgroundcolor=\color{backcolour},   
+    commentstyle=\color{codegreen},
+    keywordstyle=\color{blue},
+    numberstyle=\tiny\color{codegray},
+    stringstyle=\color{codepurple},
+    basicstyle=\ttfamily\footnotesize,
+    breakatwhitespace=false,         
+    breaklines=true,                 
+    captionpos=b,                    
+    keepspaces=true,                 
+    numbers=left,                    
+    numbersep=5pt,                  
+    showspaces=false,                
+    showstringspaces=false,
+    showtabs=false,                  
+    tabsize=2
+}
+\lstset{style=mystyle, aboveskip=6pt, belowskip=6pt}
+
+% Page headers and footers
+\pagestyle{fancy}
+\setlength{\headheight}{15pt}
+\fancyhf{}
+\fancyhead[L]{\slshape \leftmark}
+\fancyhead[R]{\thepage}
+\renewcommand{\headrulewidth}{0.4pt}
+
+% ==========================================
+% DOCUMENT STRUCTURE
+% ==========================================
+% listings configurations
+\lstdefinelanguage{JavaScript}{
+  keywords={break, case, catch, continue, debugger, default, delete, do, else, false, finally, for, function, if, in, instanceof, new, null, return, switch, this, throw, true, try, typeof, var, void, while, with, let, const, async, await},
+  morecomment=[l]{//},
+  morecomment=[s]{/*}{*/},
+  morestring=[b]',
+  morestring=[b]"
+}
+\lstdefinelanguage{json}{
+  literate=
+    *{:}{{{\color{blue}{:}}}}{1}
+     {,}{{{\color{blue}{,}}}}{1}
+     {\{}{{{\color{blue}{\{}}}}{1}
+     {\}}{{{\color{blue}{\}}}}}{1}
+     {[}{{{\color{blue}{[}}}}{1}
+     {]}{{{\color{blue}{]}}}}{1},
+  morestring=[b]"
+}
+
+\begin{document}
+
+% ------------------------------------------
+% 1. COVER PAGE
+% ------------------------------------------
+\begin{titlepage}
+\begin{center}
+    \singlespacing
+    \large
+    \textbf{A PROJECT REPORT}\\
+    \textbf{ON}\\
+    \vspace{0.8cm}
+    \Large
+    \textbf{AI-Powered Personal Finance Advisor Chatbot using Multi-Agent Architecture in n8n}\\
+    \vspace{1.5cm}
+    \large
+    \textit{Submitted in partial fulfillment of the requirements for the award of the degree of}\\
+    \vspace{0.5cm}
+    \textbf{MASTER OF COMPUTER APPLICATIONS}\\
+    \vspace{1.2cm}
+    \textit{Submitted by}\\
+    \vspace{0.3cm}
+    \textbf{Apeksha Goel}\\
+    \textbf{Roll No: 2503201450028}\\
+    \vspace{1.5cm}
+    \textit{Under the Guidance of}\\
+    \vspace{0.3cm}
+    \noindent
+    \begin{minipage}[t]{0.45\textwidth}
+        \centering
+        \textbf{Priya Mishra}\\
+        Assistant Professor (Sr. Scale)
+    \end{minipage}
+    \hfill
+    \begin{minipage}[t]{0.45\textwidth}
+        \centering
+        \textbf{Alpana Lodhi}\\
+        Assistant Professor
+    \end{minipage}
+    \vspace{1.5cm}
+
+    \begin{figure}[H]
+        \centering
+        \includegraphics[width=3.5cm]{abes_logo.png}
+    \end{figure}
+    \vspace{-0.3cm}
+    \textbf{DEPARTMENT OF MASTER OF COMPUTER APPLICATIONS}\\
+    \textbf{ABES ENGINEERING COLLEGE, GHAZIABAD}\\
+    \textbf{Affiliated to Dr. A.P.J. Abdul Kalam Technical University, Lucknow}\\
+    \textbf{Academic Session: 2025--26}
+\end{center}
+\end{titlepage}
+
+% ------------------------------------------
+% 2. CERTIFICATE PAGE
+% ------------------------------------------
+\newpage
+\pagenumbering{roman}
+\setcounter{page}{1}
+\begin{center}
+    \Large
+    \textbf{ABES ENGINEERING COLLEGE, GHAZIABAD}\\
+    \textbf{DEPARTMENT OF MASTER OF COMPUTER APPLICATIONS}\\
+    \vspace{0.8cm}
+    \Large
+    \textbf{CERTIFICATE}\\
+    \vspace{1.0cm}
+\end{center}
+\onehalfspacing
+This is to certify that the project report entitled \textbf{``AI-Powered Personal Finance Advisor Chatbot using Multi-Agent Architecture in n8n''} which is being submitted by \textbf{Apeksha Goel} (Roll No: \textbf{2503201450028}) in partial fulfillment of the requirements for the award of the degree of Master of Computer Applications (MCA) affiliated to Dr. A.P.J. Abdul Kalam Technical University, Lucknow, is a record of student's own work carried out under our supervision and guidance. 
+
+The matter embodied in this report has not been submitted elsewhere for the award of any other degree or diploma.
+\vspace{1.8cm}
+
+\noindent
+\begin{minipage}[t]{0.45\textwidth}
+    \centering
+    \textbf{Priya Mishra}\\
+    Assistant Professor (Sr. Scale)\\
+    Internal Guide
+\end{minipage}
+\hfill
+\begin{minipage}[t]{0.45\textwidth}
+    \centering
+    \textbf{Alpana Lodhi}\\
+    Assistant Professor\\
+    Co-Guide
+\end{minipage}
+
+\vspace{1.8cm}
+\noindent
+\begin{minipage}[t]{1.0\textwidth}
+    \centering
+    \textbf{Head of Department}\\
+    Department of MCA\\
+    ABES Engineering College, Ghaziabad
+\end{minipage}
+
+% ------------------------------------------
+% 3. ABSTRACT PAGE
+% ------------------------------------------
+\newpage
+\chapter*{Abstract}
+\addcontentsline{toc}{chapter}{Abstract}
+In the modern economic landscape, financial planning has shifted from manual bookkeeping to digital advisory systems. However, existing personal finance applications are typically fragmented, requiring individuals to traverse independent platforms to calculate budgets, simulate mutual fund investments, compute loan EMI options, or compare tax regime implications. Furthermore, cloud-based Large Language Model (LLM) advisory services incur high subscription costs and raise significant data privacy concerns. 
+
+This project presents an AI-Powered Personal Finance Advisor Chatbot utilizing a Multi-Agent Architecture built in n8n and powered locally by Ollama (Llama 3.2 3B). The system deploys a sequence of specialized role-playing agents (Budget Advisor, Investment Advisor, Debt Advisor, Tax Advisor, and Chief Financial Planner) that collaborate to analyze a user's single-line financial query. 
+
+Dynamic math operations are executed via custom JavaScript calculator tools, with a Zod-aligned permissive schema mapping ([number, string, null]) to prevent structural type-mismatch failures common in local LLM tool calling. The final report is synthesized as a structured JSON object containing a summary, recommendations, risks, and a concrete action plan, returned seamlessly to a webhook response. This approach maintains complete data privacy, eliminates API token costs, and provides comprehensive, integrated advisory reports.
+
+
+% ==========================================
+% CHAPTER 1: INTRODUCTION
+% ==========================================
+\clearpage
+\chapter{Introduction}
+\pagenumbering{arabic}
+\setcounter{page}{1}
+Artificial Intelligence has transitioned from predictive modeling to agentic orchestration, where Large Language Models (LLMs) act as reasoning engines capable of planning, executing tools, and synthesizing multi-step results. In the domain of personal finance, traditional advisors are costly, while standard budgeting applications remain highly fragmented. 
+
+Users must compile metadata manually across budget calculators, SIP compounding estimators, loan amortization spreadsheets, and income tax calculators. This fragmented procedure introduces cognitive overload and delays critical financial decisions.
+
+\section{Problem Statement}
+Managing personal finances remains a highly fragmented and cognitively demanding task for individuals. Organizing a cohesive financial strategy typically requires traversing multiple independent financial portals or static spreadsheets. The primary challenges in existing systems include:
+\begin{itemize}
+    \item \textbf{Information Fragmentation:} Essential parameters regarding savings behavior, investment compounding, debt liabilities, and tax bracket efficiency reside on isolated systems, forcing manual correlation.
+    \item \textbf{Schema and Format Failures in AI Tool Calling:} Local and lightweight LLMs (such as Llama 3.2 3B) often output numerical arguments as strings (e.g., \texttt{"5000"} instead of \texttt{5000}), which fails strict type constraints in standard LangChain structured schemas.
+    \item \textbf{Data Privacy Risks:} Sending detailed personal financial data (income, expenditures, outstanding debts, and tax brackets) to cloud-hosted LLM APIs exposes users to privacy and security hazards.
+    \item \textbf{High Cloud Token Costs:} Running complex multi-agent reasoning chains with multiple iterations on commercial models (e.g., GPT-4) incurs high recurrent operational costs.
+    \item \textbf{Lack of Integrated Synthesized Reports:} Existing planners fail to synthesize budgeting targets, compounding wealth returns, debt avalanche prioritizations, and tax regime recommendations into a single cohesive client report.
+\end{itemize}
+This project directly resolves these issues by building an automated, sequential multi-agent workflow in n8n that routes queries through custom mathematical tools with relaxed schemas, running fully locally to guarantee data privacy.
+
+\section{Scope of the Project}
+The scope of this project encompasses the design, implementation, and verification of a multi-agent personal finance chatbot system:
+\begin{itemize}
+    \item \textbf{Sequential Agent Chain:} A pipeline consisting of five specialized agents: Budget, Investment, Debt, Tax, and Financial Planner.
+    \item \textbf{Custom JS Calculator Tools:} Four mathematical calculators (\texttt{budget\_calculator}, \texttt{sip\_calculator}, \texttt{emi\_calculator}, \texttt{tax\_calculator}) with flexible string/number parsing.
+    \item \textbf{Shared Chat Memory:} Integration of a shared Window Buffer Memory node using a unique \texttt{session\_id} to persist context across the sequential agent steps.
+    \item \textbf{Local LLM Integration:} Configuration of Ollama hosting \texttt{llama3.2:3b} on local CPU resources to remove external token fees and secure user data.
+    \item \textbf{Unified API Access:} Development of a Webhook Trigger node accepting POST payloads and returning a structured JSON advisory layout via a Respond to Webhook node.
+\end{itemize}
+
+\section{Advantages of the Proposed System}
+\begin{itemize}
+    \item \textbf{Automated Financial Synthesis:} Compiles analysis from budget, investment, debt, and tax domains into one unified client report.
+    \item \textbf{Robust Local Parameter Validation:} Relaxed Zod input schemas accept numbers, strings, or nulls, letting custom tools safely parse inputs and prevent LLM tool-calling crashes.
+    \item \textbf{Zero Token Fees:} By executing Llama 3.2 locally on consumer hardware, the system runs indefinitely without API costs.
+    \item \textbf{Complete Data Privacy:} Personal financial data never leaves the host machine, matching corporate compliance and privacy guidelines.
+\end{itemize}
+
+\section{Limitations of Existing Systems}
+\begin{itemize}
+    \item \textbf{Static Budget Templates:} Rigid estimators require perfect inputs and fail to parse natural language queries (e.g., "I earn 50k and spend 30k").
+    \item \textbf{Cloud API Dependence:} Standard multi-agent systems rely on cloud endpoints (OpenAI/Anthropic) which can crash on network loss and incur usage costs.
+    \item \textbf{Fragmented Context:} Most calculators operate in silos; an investment simulator does not inspect a user's monthly budget surplus, leading to impractical compounding recommendations.
+\end{itemize}
+
+\section{Objective of the Project}
+The primary objective of this project is to develop a production-ready, local multi-agent chatbot that accepts user financial queries, executes custom calculation tools safely using relaxed schemas, and returns a JSON report mapping budget splits, SIP growth, EMI payoff, and tax regimes.
+
+% ==========================================
+% CHAPTER 2: REQUIREMENTS ANALYSIS
+% ==========================================
+\clearpage
+\chapter{Requirements Analysis}
+This chapter specifies the hardware components and software environments required to execute the multi-agent system and the local LLM.
+
+\section{Hardware Requirements}
+\begin{table}[H]
+    \centering
+    \caption{Hardware Specifications}
+    \begin{tabular}{lll}
+        \toprule
+        \textbf{Component} & \textbf{Minimum Specification} & \textbf{Recommended Specification} \\
+        \midrule
+        Processor & Intel Core i5 / Ryzen 5 (4 Cores) & Intel Core i7 / Ryzen 7 (8 Cores) \\
+        System RAM & 8 GB DDR4 (approx. 900MB free) & 16 GB DDR4/DDR5 \\
+        Storage Space & 10 GB Free SSD Storage & 20 GB Free SSD Storage \\
+        Graphics Card & Integrated Graphics & Dedicated GPU with 6GB+ VRAM (for GPU execution) \\
+        Network & 1 Mbps (for local setup) & 10 Mbps+ High-speed Broadband \\
+        \bottomrule
+    \end{tabular}
+\end{table}
+
+\section{Software Requirements}
+\begin{itemize}
+    \item \textbf{Operating System:} Windows 10 or Windows 11 (64-bit).
+    \item \textbf{Runtime Environment:} Node.js (v20.19.0) under Node Version Manager (NVM).
+    \item \textbf{Database Engine:} SQLite3 (local filesystem storage \texttt{~/.n8n/database.sqlite}).
+    \item \textbf{Workflow Automation Tool:} n8n v2.8.4 (Self Hosted).
+    \item \textbf{Local LLM Host:} Ollama v0.1.48+ running Llama 3.2 3B model.
+    \item \textbf{Programming Language:} Python 3.12 (for testing and deployment utility scripts).
+\end{itemize}
+
+\section{Feasibility Study}
+\begin{itemize}
+    \item \textbf{Technical Feasibility:} The integration of n8n, Ollama, and SQLite is highly feasible. Custom JavaScript tool schemas successfully translate json-schema to Zod parameters.
+    \item \textbf{Operational Feasibility:} The sequential agent design runs automatically. End-users interact with a single webhook payload, requiring zero manual configuration.
+    \item \textbf{Economic Feasibility:} The project uses local computing and open-source models, resulting in zero monthly operational costs for LLM inference.
+\end{itemize}
+
+% ==========================================
+% CHAPTER 3: SYSTEM DESIGN & ARCHITECTURE
+% ==========================================
+\clearpage
+\chapter{System Design \& Architecture}
+The system architecture mirrors the CrewAI sequential workflow, mapping tasks to independent agents connected in a linear pipeline.
+
+\section{System Flowchart}
+The flow starts from a Webhook POST trigger, validates the body parameters, and sequentially executes the role-playing agents before formatting the planner output:
+\begin{figure}[H]
+    \centering
+    \begin{minipage}{1.0\textwidth}
+        \centering
+        \textbf{[Webhook Trigger]} $\rightarrow$ \textbf{[Check Payload (IF)]} $\rightarrow$ \textbf{[Budget Agent]} \\
+        \hspace{8cm} $\downarrow$ \\
+        \textbf{[Debt Agent]} $\leftarrow$ \textbf{[Investment Agent]} \\
+        \hspace{1cm} $\downarrow$ \\
+        \textbf{[Tax Agent]} $\rightarrow$ \textbf{[Financial Planner]} $\rightarrow$ \textbf{[Code JSON Parser]} $\rightarrow$ \textbf{[Respond To Webhook]}
+    \end{minipage}
+    \caption{Sequential Multi-Agent Execution Flow}
+\end{figure}
+
+\section{Workflow Connections and Nodes}
+The workflow is defined in \texttt{finance\_advisor\_n8n.json}. The key components include:
+\begin{itemize}
+    \item \textbf{Ollama LLM Chat Model:} Pushes the \texttt{llama3.2:3b} model to all agents over a local port (http://localhost:11434).
+    \textbf{Window Buffer Memory:} Keeps track of past chats using the session key \texttt{session\_id}.
+    \item \textbf{Sequential Agents:}
+        \begin{itemize}
+            \item \textbf{Budget Agent (Position: 512, 208):} Employs the \texttt{budget\_calculator} tool.
+            \item \textbf{Investment Agent (Position: 704, 208):} Employs the \texttt{sip\_calculator} tool and consumes Budget output.
+            \item \textbf{Debt Agent (Position: 912, 208):} Employs the \texttt{emi\_calculator} tool and consumes Budget output.
+            \item \textbf{Tax Agent (Position: 1104, 208):} Employs the \texttt{tax\_calculator} tool and consumes Budget output.
+            \item \textbf{Financial Planner (Position: 1232, 208):} Combines results into a single final report.
+        \end{itemize}
+\end{itemize}
+
+\section{Custom Tool Schema Definitions}
+To ensure the LLM never causes a validation failure when passing arguments, all parameter types are set to \texttt{["number", "string", "null"]}. This relaxed format is parsed inside the JS tool scripts.
+
+\begin{table}[H]
+    \centering
+    \caption{Custom Tool Schemas}
+    \begin{tabular}{lllp{6cm}}
+        \toprule
+        \textbf{Tool Name} & \textbf{Parameter} & \textbf{Type} & \textbf{Description} \\
+        \midrule
+        budget\_calculator & monthly\_income & [number, string, null] & Monthly earnings. \\
+        & monthly\_expenses & [number, string, null] & Monthly expenditure. \\
+        \midrule
+        sip\_calculator & monthly\_investment & [number, string, null] & Monthly SIP contribution. \\
+        & expected\_return\_rate & [number, string, null] & Annual yield rate. \\
+        & years & [number, string, null] & Investment timeline in years. \\
+        \midrule
+        emi\_calculator & principal & [number, string, null] & Total loan principal. \\
+        & annual\_interest\_rate & [number, string, null] & Annual loan rate percentage. \\
+        & years & [number, string, null] & Repayment tenure in years. \\
+        \midrule
+        tax\_calculator & annual\_income & [number, string, null] & Total yearly taxable earnings. \\
+        \bottomrule
+    \end{tabular}
+\end{table}
+
+% ==========================================
+% CHAPTER 4: IMPLEMENTATION DETAILS
+% ==========================================
+\clearpage
+\chapter{Implementation Details}
+The system implementation uses n8n visual flow layout with embedded sandbox code.
+
+\section{Custom JavaScript Calculator Tools}
+Below is the JavaScript code embedded in the \texttt{sip\_calculator} node, illustrating how the inputs are parsed:
+\begin{lstlisting}[language=JavaScript, caption=sip\_calculator JS Implementation]
+try {
+  let sip = null;
+  let rate_annual = null;
+  let years = null;
+  
+  if (query && typeof query === 'object') {
+    sip = typeof query.monthly_investment === 'number' ? query.monthly_investment : (parseFloat(query.monthly_investment) || null);
+    rate_annual = typeof query.expected_return_rate === 'number' ? query.expected_return_rate : (parseFloat(query.expected_return_rate) || null);
+    years = typeof query.years === 'number' ? query.years : (parseInt(query.years) || null);
+  }
+  
+  if (sip === null || rate_annual === null || years === null) {
+    let text = '';
+    if (typeof query === 'string') {
+      text = query;
+    } else if (query && typeof query === 'object') {
+      text = query.query || query.input || '';
+    }
+    
+    const parseNum = (matchResult) => {
+      if (!matchResult) return null;
+      let val = parseFloat(matchResult[1]);
+      const unit = (matchResult[2] || '').toLowerCase();
+      if (unit.startsWith('k')) val *= 1000;
+      else if (unit.startsWith('l')) val *= 100000;
+      else if (unit.startsWith('m')) val *= 1000000;
+      return val;
+    };
+    
+    if (sip === null) {
+      sip = parseNum(text.match(/(?:sip|monthly|invest|saving)\D*(\d+(?:\.\d+)?)\s*(k|lakh|l|m)?/i));
+    }
+    if (rate_annual === null) {
+      const pctMatch = text.match(/(\d+(?:\.\d+)?)\s*%/);
+      if (pctMatch) {
+        rate_annual = parseFloat(pctMatch[1]);
+      } else {
+        const rateMatch = text.match(/(?:rate|return|interest|yield)\D*(\d+(?:\.\d+)?)/i);
+        if (rateMatch) rate_annual = parseFloat(rateMatch[1]);
+      }
+    }
+    if (years === null) {
+      const yrMatch = text.match(/(\d+)\s*(?:year|yr|y)/i);
+      if (yrMatch) {
+        years = parseInt(yrMatch[1]);
+      } else {
+        const yearsMatch = text.match(/(?:year|duration|time|period)\D*(\d+)/i);
+        if (yearsMatch) years = parseInt(yearsMatch[1]);
+      }
+    }
+  }
+  
+  if (sip === null || rate_annual === null || years === null) {
+    const missing = [];
+    if (sip === null) missing.push('monthly_investment');
+    if (rate_annual === null) missing.push('expected_return_rate');
+    if (years === null) missing.push('years');
+    return `Error: Missing required inputs for SIP calculation. Required: ${missing.join(', ')}.`;
+  }
+  
+  const rate_monthly = rate_annual / 12 / 100;
+  const months = years * 12;
+  const total_invested = sip * months;
+  const maturity_value = sip * ((Math.pow(1 + rate_monthly, months) - 1) / rate_monthly) * (1 + rate_monthly);
+  const estimated_returns = maturity_value - total_invested;
+  
+  const fmt = (num) => num.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  
+  return `Monthly SIP: INR ${fmt(sip)}
+Tenure: ${years} years (${months} months)
+Expected Return Rate: ${rate_annual.toFixed(2)}%
+Total Invested: INR ${fmt(total_invested)}
+Maturity Value: INR ${fmt(maturity_value)}
+Wealth Gained: INR ${fmt(estimated_returns)}`;
+} catch (e) {
+  return 'Error: ' + e.message;
+}
+\end{lstlisting}
+
+\section{JSON Parser Node}
+To return a clean JSON object, the output text from \texttt{financial\_planner} is parsed via a JavaScript code node:
+\begin{lstlisting}[language=JavaScript, caption=JSON Code Parser Implementation]
+const report = JSON.parse($input.first().json.output);
+
+return [
+  {
+    json: report
+  }
+];
+\end{lstlisting}
+
+% ==========================================
+% CHAPTER 5: TESTING AND VALIDATION
+% ==========================================
+\clearpage
+\chapter{Testing and Validation}
+Testing was performed using custom curl queries sent to the n8n local webhook endpoint.
+
+\section{Test Payload Structure}
+The system was verified with the following input POST payload:
+\begin{lstlisting}[language=json, caption=Test Input Payload]
+{
+  "session_id": "test-session-123",
+  "message": "I earn 50000 INR and spend 30000 INR. What is my budget?"
+}
+\end{lstlisting}
+
+\section{Resolution of Tool Schema Validation Failures}
+During early development, the workflow threw the following schema validation errors:
+\begin{lstlisting}[language=bash, caption=Tool Schema Validation Error]
+Received tool input did not match expected schema 
+✖ Expected number, received null -> at monthly_investment
+\end{lstlisting}
+This occurred because the local LLM passed arguments as string quotes (e.g., \texttt{"5000"}) or omitted them (e.g., \texttt{null}). 
+
+The error was successfully resolved by:
+\begin{enumerate}
+    \item Rewriting the tool input schemas to allow a union of types: \texttt{["number", "string", "null"]}.
+    \item Modifying the custom JS tool scripts to execute explicit type coercion: \texttt{parseFloat(query.monthly\_investment)}.
+    \item Confirming the database is updated with \texttt{schemaType: "manual"}, forcing the n8n core parser to read the \texttt{inputSchema} structure.
+\end{enumerate}
+
+\section{Response Output}
+Following execution, the webhook returns the following valid parsed JSON structure:
+\begin{lstlisting}[language=json, caption=Advisory Report Response]
+{
+  "summary": "Calculated budget with 50-30-20 splits based on monthly income of INR 50,000.00 and expenses of INR 30,000.00. Investment parameters were missing and noted in the report.",
+  "recommendations": [
+    "Aim to invest your surplus of INR 20,000.00 to build long-term wealth.",
+    "Allocate INR 25,000.00 to Needs, INR 15,000.00 to Wants, and INR 10,000.00 to Savings.",
+    "Build a 6-month emergency fund target of INR 180,000.00."
+  ],
+  "risks": [
+    "Your current savings rate is 40.00% which is good, but keeping surplus in cash risks inflation erosion.",
+    "No investment, tax optimization, or debt data was supplied."
+  ],
+  "action_plan": [
+    "Review your monthly expenses to find areas where you can reduce wants.",
+    "Define your SIP goals and provide monthly investment details to run the SIP calculator.",
+    "Establish your emergency fund in a liquid savings account."
+  ]
+}
+\end{lstlisting}
+
+% ==========================================
+% CHAPTER 6: CONCLUSION & FUTURE SCOPE
+% ==========================================
+\clearpage
+\chapter{Conclusion \& Future Scope}
+This chapter summarizes the work and presents future directions for improvement.
+
+\section{Conclusion}
+The AI-Powered Personal Finance Advisor Chatbot successfully implements a sequential multi-agent orchestration pipeline. By running Ollama hosting Llama 3.2 locally and executing custom JS calculators on relaxed schemas, the chatbot solves the data privacy risk and high token costs associated with cloud LLM APIs, while remaining resilient to model-level tool input formatting errors.
+
+\section{Future Scope}
+Future enhancements to the chatbot include:
+\begin{itemize}
+    \item \textbf{Dynamic Chart Generation:} Adding a node to compile budget and SIP growth charts to display on a frontend UI.
+    \item \textbf{Real-Time Market APIs:} Connecting the SIP calculator to live market feeds (e.g. Yahoo Finance) to project realistic yields.
+    \item \textbf{Interactive Scenario Testing:} Allowing the chat interface to adjust parameters dynamically based on user replies.
+\end{itemize}
+
+\end{document}
